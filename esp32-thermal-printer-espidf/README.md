@@ -39,7 +39,7 @@ const char *ssid_password = "password";
 const char *firmware_url = "https://path-to-firmware.bin";
 ```
 
-`firmware_url` allows an optional path to an OTA update. Trigger the update process with a `POST` to `/ota`.
+`firmware_url` allows an optional path to download an OTA update. Trigger the download and reboot with a `POST` to `/ota`.
 
 ## API
 
