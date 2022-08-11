@@ -1,0 +1,5 @@
+.idea/
+.vscode/
+*/cmake-build-*/*
+cmake-build-debug/
+secrets.h
