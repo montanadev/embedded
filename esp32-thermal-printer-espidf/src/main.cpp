@@ -44,7 +44,7 @@ extern "C"
         ESP_LOGI("connect_wifi", "Connected @ %s\n", WiFi.localIP().toString().c_str());
     }
 
-    static esp_err_t livenessHandler(httpd_req_t *req)
+    static esp_err_t pingHandler(httpd_req_t *req)
     {
         httpd_resp_set_type(req, "application/json");
         cJSON *root = cJSON_CreateObject();
@@ -283,16 +283,11 @@ extern "C"
         httpd_start(&server, &config);
 
         // test handlers, and potentially monitoring urls
-        httpd_uri_t readiness_uri = {
-            .uri = "/readiness",
+        httpd_uri_t ping_uri = {
+            .uri = "/ping",
             .method = HTTP_GET,
-            .handler = livenessHandler};
-        httpd_register_uri_handler(server, &readiness_uri);
-        httpd_uri_t liveness_uri = {
-            .uri = "/liveness",
-            .method = HTTP_GET,
-            .handler = livenessHandler};
-        httpd_register_uri_handler(server, &liveness_uri);
+            .handler = pingHandler};
+        httpd_register_uri_handler(server, &ping_uri);
 
         // POST markdown url
         httpd_uri_t print_uri = {
