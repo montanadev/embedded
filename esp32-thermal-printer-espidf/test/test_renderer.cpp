@@ -1,6 +1,7 @@
 #include "../lib/renderer/src/renderer.h"
 #include <string>
 #include <unity.h>
+#include <iostream>
 
 /*
  * MVP - support a really nice bitmap / checkbox icon,
@@ -15,6 +16,27 @@ void test_split(void) {
   TEST_ASSERT_EQUAL_STRING("", b[0].c_str());
   TEST_ASSERT_EQUAL_STRING("jkl", b[1].c_str());
   TEST_ASSERT_EQUAL_STRING("mno", b[2].c_str());
+}
+
+void test_newlines(void) {
+  string a = "a\nb\nc\nd";
+  auto result = renderer(a);
+
+  vector<vector<string>> expected{
+      {"println", "a"},
+      {"println", "b"},
+      {"println", "c"},
+      {"println", "d"},
+  };
+
+  TEST_ASSERT_EQUAL(expected.size(), result.size());
+  for (int x = 0; x < result.size(); x++)
+  {
+    for (int y = 0; y < result[x].size(); y++)
+    {
+      TEST_ASSERT_EQUAL_STRING(expected[x][y].c_str(), result[x][y].c_str());
+    }
+  }
 }
 
 void test_renderer_table_formatting(void)
@@ -88,12 +110,46 @@ void test_renderer_split_to_lines(void)
 void test_renderer_simple_text_formatting(void)
 {
   string a =
-      "**bold**\n";
+      "** bold **\n#hi";
   vector<vector<string>> result = renderer(a);
+  
+  //std::cout << debug(result) << endl;
 
   vector<vector<string>> expected{
       {"boldOn"},
-      {"println", "bold"},
+      {"println", " bold "},
+      {"boldOff"},
+      {"setSize", "L"},
+      {"println", "hi"},
+      {"setSize", "S"},
+  };
+
+  TEST_ASSERT_EQUAL(expected.size(), result.size());
+  for (int x = 0; x < result.size(); x++)
+  {
+    for (int y = 0; y < result[x].size(); y++)
+    {
+      TEST_ASSERT_EQUAL_STRING(expected[x][y].c_str(), result[x][y].c_str()); 
+    }
+  }
+}
+
+void test_renderer_horizontal_rule(void) {
+  string a = 
+      "--\n"
+      "---\n"
+      " ----   \n";
+  vector<vector<string>> result = renderer(a);
+
+  vector<vector<string>> expected{
+      {"println", "--"},
+      {"setSize", "S"},
+      {"boldOn"},
+      {"println", "--------------------------------"},
+      {"boldOff"},
+      {"setSize", "S"},
+      {"boldOn"},
+      {"println", "--------------------------------"},
       {"boldOff"},
   };
 
@@ -107,7 +163,7 @@ void test_renderer_simple_text_formatting(void)
   }
 }
 
-void test_renderer_complex_text_formatting(void)
+void test_renderer_bold_header_formatting(void)
 {
   string a =
       "# **bold**\n";
@@ -134,11 +190,11 @@ void test_renderer_complex_text_formatting(void)
 void test_renderer_simple_heading(void)
 {
   string a =
-      "# h1\n"
-      "## h2\n"
+      " # h1\n"
+      "  ## h2\n"
       "### h3\n"
-      "#### h4\n"
-      "##### h5\n";
+      "  #### h4\n"
+      "   ##### h5\n";
   vector<vector<string>> result = renderer(a);
 
   vector<vector<string>> expected{
@@ -171,10 +227,12 @@ int main()
   UNITY_BEGIN();
 
   RUN_TEST(test_split);
+  RUN_TEST(test_newlines);
+  RUN_TEST(test_renderer_horizontal_rule);
   RUN_TEST(test_renderer_table_formatting);
   RUN_TEST(test_renderer_split_to_lines);
   RUN_TEST(test_renderer_simple_text_formatting);
-  RUN_TEST(test_renderer_complex_text_formatting);
+  RUN_TEST(test_renderer_bold_header_formatting);
   RUN_TEST(test_renderer_simple_heading);
 
   UNITY_END();

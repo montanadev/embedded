@@ -23,6 +23,8 @@
 #include <string>
 #include "cJSON.h"
 
+#define VERSION "4"
+
 extern "C"
 {
 
@@ -44,6 +46,7 @@ static esp_err_t pingHandler(httpd_req_t *req) {
     httpd_resp_set_type(req, "application/json");
     cJSON *root = cJSON_CreateObject();
     cJSON_AddStringToObject(root, "result", "success");
+    cJSON_AddStringToObject(root, "version", VERSION);
     const char *response = cJSON_Print(root);
     httpd_resp_sendstr(req, response);
     cJSON_Delete(root);
@@ -179,17 +182,9 @@ static esp_err_t printHandler(httpd_req_t *req) {
     }
 
     auto commands = renderer(data);
-    ESP_LOGI("printHandler", "Got commands:");
-    for (auto command: commands) {
-        for (auto subCommand: command) {
-            ESP_LOGI("printHandler", "command: %s", subCommand.c_str());
-        }
-    }
+    ESP_LOGI("printHandler", "Got commands: %s", debug(commands).c_str());
 
     for (auto command: commands) {
-        for (auto subCommand: command) {
-            ESP_LOGI("printHandler", "running command: %s", subCommand.c_str());
-        }
         callPrinterFunc(command);
     }
 
@@ -248,6 +243,6 @@ void app_main() {
             .handler = otaHandler};
     httpd_register_uri_handler(server, &ota_uri);
 
-    ESP_LOGI("app_main", "running v%d", 2);
+    ESP_LOGI("app_main", "running v%s", VERSION);
 }
 }

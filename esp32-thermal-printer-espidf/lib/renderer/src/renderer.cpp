@@ -3,11 +3,37 @@
 #include <vector>
 #include <regex>
 #include <sstream>
-#include <iostream>
+#include <cstdarg>
 
 using namespace std;
 
 const string WHITESPACE = " \n\r\t\f\v";
+
+template<typename T>
+vector<string> createInstruction(const T& value)
+{
+    std::ostringstream oss;
+    oss << value;
+    vector<string> out;
+    out.push_back(oss.str());
+    return out;
+}
+
+template<typename T, typename ... Args >
+vector<string> createInstruction(const T& value, const Args& ... args)
+{
+    vector<string> a = createInstruction(value);
+    vector<string> b = createInstruction(args...);
+    vector<string> c;
+    // add the two lists together
+    for (auto i : a) {
+        c.push_back(i);
+    }
+    for (auto i : b) {
+        c.push_back(i);
+    }
+    return c;
+}
 
 string debug(vector<vector<string> > data) {
     string output;
@@ -114,32 +140,20 @@ vector<vector<string> > formatTableRows(vector<string> tableRows) {
     vector<vector<string> > formatted;
     auto maxWidths = calculateCellWidths(tableRows);
 
-    vector<string> boldOn;
-    boldOn.push_back("boldOn");
-    formatted.push_back(boldOn);
+    // top row and gutter should be bold
+    formatted.push_back(createInstruction("boldOn"));
 
-    vector<string> tableHeaderInstruction;
-    tableHeaderInstruction.push_back("println");
     // push the first header row
-    tableHeaderInstruction.push_back(formatTableRow(tableRows[0], maxWidths));
-    formatted.push_back(tableHeaderInstruction);
+    formatted.push_back(createInstruction("println", formatTableRow(tableRows[0], maxWidths)));
+    // push the table gutter
+    formatted.push_back(createInstruction("println", formatTableGutterRow(tableRows[1], maxWidths)));
 
-    vector<string> tableGutterInstruction;
-    tableGutterInstruction.push_back("println");
-    tableGutterInstruction.push_back(formatTableGutterRow(tableRows[1], maxWidths));
-    formatted.push_back(tableGutterInstruction);
-
-    vector<string> boldOff;
-    boldOff.push_back("boldOff");
-    formatted.push_back(boldOff);
+    // turn off bold for start of table rows
+    formatted.push_back(createInstruction("boldOff")); 
 
     for (int i = 2; i < tableRows.size(); i++) {
-        vector<string> tableRowInstruction;
-        tableRowInstruction.push_back("println");
-        tableRowInstruction.push_back(formatTableRow(tableRows[i], maxWidths));
-        formatted.push_back(tableRowInstruction);
+        formatted.push_back(createInstruction("println", formatTableRow(tableRows[i], maxWidths)));
     }
-
     return formatted;
 }
 
@@ -157,14 +171,11 @@ vector<vector<string> > renderer(string data) {
     for (auto line: lines) {
         smatch sm;
 
-        regex header1pattern("^#(?!#)[ ]+(.*)");
+        regex header1pattern("^[ ]{0,}#(?!#)[ ]{0,}(.*)");
         // ex: `# h1`
         regex_match(line, sm, header1pattern);
         if (sm.size()) {
-            vector<string> size;
-            size.push_back("setSize");
-            size.push_back("L");
-            result.push_back(size);
+            result.push_back(createInstruction("setSize", "L"));
 
             vector<vector<string> > addtl = renderer(sm[1]);
             for (auto a: addtl) {
@@ -172,22 +183,16 @@ vector<vector<string> > renderer(string data) {
             }
 
             // reset to normal text size
-            vector<string> resetSize;
-            resetSize.push_back("setSize");
-            resetSize.push_back("S");
-            result.push_back(resetSize);
+            result.push_back(createInstruction("setSize", "S"));
             continue;
         }
         
 
-        regex header2pattern("^##(?!#)[ ]+(.*)");
+        regex header2pattern("^[ ]{0,}##(?!#)[ ]{0,}(.*)");
         // ex: `## h2`
         regex_match(line, sm, header2pattern);
         if (sm.size()) {
-            vector<string> size;
-            size.push_back("setSize");
-            size.push_back("M");
-            result.push_back(size);
+            result.push_back(createInstruction("setSize", "M"));
 
             vector<vector<string> > addtl = renderer(sm[1]);
             for (auto a: addtl) {
@@ -195,21 +200,15 @@ vector<vector<string> > renderer(string data) {
             }
 
             // reset to normal text size
-            vector<string> resetSize;
-            resetSize.push_back("setSize");
-            resetSize.push_back("S");
-            result.push_back(resetSize);
+            result.push_back(createInstruction("setSize", "S"));
             continue;
         }
 
-        regex header3pattern("^[# ]+(.*)");
-        // ex: `### h3` and beyond can't be made smaller, so capture all and set as small text
+        regex header3pattern("^[ ]{0,}[#]{3,}(?!#)[ ]+(.*)");
+        // ex: `### h3` but can't be printed smaller, so strip the ###'s off and set as small text
         regex_match(line, sm, header3pattern);
         if (sm.size()) {
-            vector<string> size;
-            size.push_back("setSize");
-            size.push_back("S");
-            result.push_back(size);
+            result.push_back(createInstruction("setSize", "S"));
 
             vector<vector<string> > addtl = renderer(sm[1]);
             for (auto a: addtl) {
@@ -217,24 +216,31 @@ vector<vector<string> > renderer(string data) {
             }
             continue;
         }
+
+        regex horizontalRule("^[ ]{0,}[-]{3,}[ ]{0,}$");
+        regex_match(line, sm, horizontalRule);
+         if (sm.size()) {
+            result.push_back(createInstruction("setSize", "S"));
+            result.push_back(createInstruction("boldOn"));
+            result.push_back(createInstruction("println", "--------------------------------"));
+            result.push_back(createInstruction("boldOff"));
+            continue;
+         }
+
         
         // TODO - this doesnt work for ***triple***, but not sure what the expected outcome would be
         regex boldPattern("\\*\\*(.*)\\*\\*");
         // ex: `**bold**`
         regex_match(line, sm, boldPattern);
         if (sm.size()) {
-            vector<string> boldOn;
-            boldOn.push_back("boldOn");
-            result.push_back(boldOn);
+            result.push_back(createInstruction("boldOn"));
 
             vector<vector<string> > addtl = renderer(sm[1]);
             for (auto a: addtl) {
                 result.push_back(a);
             }
 
-            vector<string> boldOff;
-            boldOff.push_back("boldOff");
-            result.push_back(boldOff);
+            result.push_back(createInstruction("boldOff"));
             continue;
         }
         
@@ -271,7 +277,6 @@ vector<vector<string> > renderer(string data) {
             continue;
         }
 
-        
         if (tableConfirmed) {
             // append the formatted rows to result
             auto formattedTableRows = formatTableRows(tableRows);
@@ -280,13 +285,8 @@ vector<vector<string> > renderer(string data) {
             }
             tableRows.clear();
             tableConfirmed = false;
-
         }
-
-        vector<string> println;
-        println.push_back("println");
-        println.push_back(line);
-        result.push_back(println);
+        result.push_back(createInstruction("println", line));
     }
 
     if (tableRows.size()) {
