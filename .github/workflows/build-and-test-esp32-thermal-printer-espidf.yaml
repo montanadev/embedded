@@ -1,0 +1,56 @@
+name: esp32-thermal-printer-espidf
+
+on:
+  push:
+    paths:
+      - esp32-thermal-printer-espidf/**
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install PlatformIO Core
+        run: pip install --upgrade platformio
+
+      - name: Build PlatformIO Project
+        run: |
+          cd esp32-thermal-printer-espidf
+
+          # needs a secrets.h to build correctly
+          echo -n '
+            const char *ssid_name = "bogus";
+            const char *ssid_password = "values";
+            const char *firmware_url = "https://rock.bin";' > src/secrets.h
+
+          make build
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install PlatformIO Core
+        run: pip install --upgrade platformio
+
+      - name: Build PlatformIO Project
+        run: cd esp32-thermal-printer-espidf && make test
