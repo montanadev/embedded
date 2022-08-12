@@ -49,7 +49,6 @@ void test_renderer_table_formatting(void)
 {
   // TODO - support single row table
   // TODO - what if the table is wider than the receipt paper?
-
   assert_rendered(
       "|name|fun hobby|\n"
       "|-|-|\n"
