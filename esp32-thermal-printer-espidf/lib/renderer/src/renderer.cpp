@@ -3,6 +3,7 @@
 #include <vector>
 #include <regex>
 #include <sstream>
+#include <iostream>
 
 using namespace std;
 
@@ -90,24 +91,28 @@ string formatTableGutterRow(string tableRow, vector<int> maxWidths) {
     return tableGutterFormatted;
 }
 
-vector<vector<string> > formatTableRows(vector<string> tableRows) {
-    vector<vector<string> > formatted;
+vector<int> calculateCellWidths(vector<string> tableRows) {
     vector<int> maxWidths;
-
     for (auto row: tableRows) {
         // TODO - the off-by-one is due to split, should it be changed to simplify?
         vector<string> cells = split(row, '|');
         for (int i = 1; i < cells.size(); i++) {
-            if (maxWidths.size() <= i - 1) {
+            if (maxWidths.size() < i) {
                 maxWidths.push_back(0);
             }
 
-            string cell = cells[i];
-            if (cell.length() > maxWidths[i - 1]) {
-                maxWidths[i -1] = trim(cell).length();
+            int cellWidth = trim(cells[i]).length();
+            if (cellWidth > maxWidths[i - 1]) {
+                maxWidths[i -1] = cellWidth;
             }
         }
     }
+    return maxWidths;
+}
+
+vector<vector<string> > formatTableRows(vector<string> tableRows) {
+    vector<vector<string> > formatted;
+    auto maxWidths = calculateCellWidths(tableRows);
 
     vector<string> boldOn;
     boldOn.push_back("boldOn");
@@ -140,9 +145,7 @@ vector<vector<string> > formatTableRows(vector<string> tableRows) {
 
 
 vector<vector<string> > renderer(string data) {
-
     vector<vector<string> > result;
-    
 
     // tableStart is used for detecting the first header row of a markdown table
     // and confirming it on the second hyphen row
@@ -167,6 +170,12 @@ vector<vector<string> > renderer(string data) {
             for (auto a: addtl) {
                 result.push_back(a);
             }
+
+            // reset to normal text size
+            vector<string> resetSize;
+            resetSize.push_back("setSize");
+            resetSize.push_back("S");
+            result.push_back(resetSize);
             continue;
         }
         
@@ -184,12 +193,17 @@ vector<vector<string> > renderer(string data) {
             for (auto a: addtl) {
                 result.push_back(a);
             }
+
+            // reset to normal text size
+            vector<string> resetSize;
+            resetSize.push_back("setSize");
+            resetSize.push_back("S");
+            result.push_back(resetSize);
             continue;
         }
-        
 
-        regex header3pattern("^###(?!#)[ ]+(.*)");
-        // ex: `### h3`
+        regex header3pattern("^[# ]+(.*)");
+        // ex: `### h3` and beyond can't be made smaller, so capture all and set as small text
         regex_match(line, sm, header3pattern);
         if (sm.size()) {
             vector<string> size;
@@ -203,7 +217,6 @@ vector<vector<string> > renderer(string data) {
             }
             continue;
         }
-
         
         // TODO - this doesnt work for ***triple***, but not sure what the expected outcome would be
         regex boldPattern("\\*\\*(.*)\\*\\*");
