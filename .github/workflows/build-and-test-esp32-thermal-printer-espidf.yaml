@@ -3,7 +3,7 @@ name: esp32-thermal-printer-espidf
 on:
   push:
     paths:
-      - esp32-thermal-printer-espidf
+      - esp32-thermal-printer-espidf/**
 
 jobs:
   build:
