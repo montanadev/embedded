@@ -23,7 +23,7 @@
 #include <string>
 #include "cJSON.h"
 
-#define VERSION "5"
+#define VERSION "6"
 
 extern "C"
 {
