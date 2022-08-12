@@ -31,7 +31,7 @@ jobs:
           echo -n '
             const char *ssid_name = "bogus";
             const char *ssid_password = "values";
-            const char *firmware_url = "https://rock.bin"\;' > src/secrets.h
+            const char *firmware_url = "https://rock.bin";' > src/secrets.h
 
           make build
 
