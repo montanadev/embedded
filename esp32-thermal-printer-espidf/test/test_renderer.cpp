@@ -45,9 +45,23 @@ void test_newlines(void)
       });
 }
 
+void test_renderer_table_single_column(void)
+{
+  assert_rendered(
+      "|hello|\n"
+      "|-------|\n"
+      "| world!!!|\n",
+      {
+          {"boldOn"},
+          {"println", "| hello    |"},
+          {"println", "| -------- |"},
+          {"boldOff"},
+          {"println", "| world!!! |"},
+      });
+}
+
 void test_renderer_table_formatting(void)
 {
-  // TODO - support single row table
   // TODO - what if the table is wider than the receipt paper?
   assert_rendered(
       "|name|fun hobby|\n"
@@ -168,6 +182,7 @@ int main()
   RUN_TEST(test_split);
   RUN_TEST(test_newlines);
   RUN_TEST(test_renderer_horizontal_rule);
+  RUN_TEST(test_renderer_table_single_column);
   RUN_TEST(test_renderer_table_formatting);
   RUN_TEST(test_renderer_split_to_lines);
   RUN_TEST(test_renderer_simple_text_formatting);

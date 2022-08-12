@@ -1,0 +1,46 @@
+<html>
+    <head>
+        <title>Markdown Printer</title>
+    </head>
+    <body>
+        <h1>Markdown Printer</h1>
+
+        <textarea cols="40" rows="40">
+# h1
+## h2
+
+** bold **
+__bold__
+
+|table |
+|------|
+|simple|
+
+|key|value|
+|-|-|
+|asdf|jkl|
+
+lists
+* of
+* things
+
+bullets
+- [ ] a
+- [x] b
+- [ ] c
+        </textarea>
+        <button onClick="print()">Print</button>
+        <script>
+            function print() {
+                fetch("/print", {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'text/plain'
+                    },
+                    body: document.querySelector('textarea').value
+                });
+            }
+        </script>
+    </body>
+
+</html>
