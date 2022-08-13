@@ -8,7 +8,7 @@
  *               and support checkboxes
  */
 
-void assert_rendered(string input, vector<vector<string> > expected)
+void assert_rendered(string input, vector<vector<string>> expected)
 {
   auto actual = renderer(input);
 
