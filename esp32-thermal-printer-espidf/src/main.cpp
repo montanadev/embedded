@@ -27,7 +27,6 @@
 
 extern "C"
 {
-
     // Serial2 on esp32 is TX2/RX2 pins
     Adafruit_Thermal printer(&Serial2);
 
@@ -36,13 +35,21 @@ extern "C"
 
     void connect_wifi()
     {
-        WiFi.mode(WIFI_STA);
-        WiFi.begin(ssid_name, ssid_password);
-        ESP_LOGI("connect_wifi", "Connecting to wifi...\n");
-        while (WiFi.status() != WL_CONNECTED)
-        {
-            ESP_LOGI("connect_wifi", ".\n");
-            vTaskDelay(1000 / portTICK_PERIOD_MS);
+        while(1) {
+            int attempts = 0;
+            WiFi.mode(WIFI_STA);
+            WiFi.begin(ssid_name, ssid_password);
+            ESP_LOGI("connect_wifi", "Connecting to wifi...\n");
+            while (WiFi.status() != WL_CONNECTED && attempts < 7)
+            {
+                attempts++;
+                ESP_LOGI("connect_wifi", ".\n");
+                vTaskDelay(1000 / portTICK_PERIOD_MS);
+            }
+            if (WiFi.status() != WL_CONNECTED) {
+                continue;
+            }
+            break;
         }
         ESP_LOGI("connect_wifi", "Connected @ %s\n", WiFi.localIP().toString().c_str());
     }

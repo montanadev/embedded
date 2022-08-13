@@ -88,20 +88,20 @@ vector<string> splitToLines(const string &data) {
 }
 
 string formatTableRow(string tableRow, vector<int> maxWidths) {
-    string tableHeaderCellFormatted = "|";
-    auto tableHeaderCells = split(tableRow, '|');
-    for (int n = 1; n < tableHeaderCells.size(); n++) {
-        auto tableHeaderCell = tableHeaderCells[n];
+    string tableRowFormatted = "|";
+    auto tableCells = split(tableRow, '|');
+    for (int n = 1; n < tableCells.size(); n++) {
+        auto tableCell = tableCells[n];
 
-        string trimmed = trim(tableHeaderCell);
+        string trimmed = trim(tableCell);
         int whitespaceNeeded = maxWidths[n - 1] - trimmed.length();
         string whitespace = "";
         for (int i = 0; i < whitespaceNeeded; i++) {
             whitespace += " ";
         }
-        tableHeaderCellFormatted += ' ' + trimmed + whitespace + " |";
+        tableRowFormatted += ' ' + trimmed + whitespace + " |";
     }
-    return tableHeaderCellFormatted;
+    return tableRowFormatted;
 }
 
 string formatTableGutterRow(string tableRow, vector<int> maxWidths) {
