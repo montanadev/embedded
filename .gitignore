@@ -5,3 +5,4 @@
 */cmake-build-*/*
 cmake-build-debug/
 secrets.h
+.DS_Store
