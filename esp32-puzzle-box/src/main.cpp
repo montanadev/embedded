@@ -3,6 +3,7 @@
 #include "Adafruit_VL53L0X.h"
 #include <Adafruit_MPU6050.h>
 #include <esp_log.h>
+#include <vector>
 
 extern "C"
 {
@@ -177,8 +178,76 @@ extern "C"
         }
     }
 
-    void game3() {
-        while(1) {
+    void clearDisplay()
+    {
+        for (int i = 0; i < led_strip.numPixels(); i++)
+        {
+            led_strip.setPixelColor(i, white);
+        }
+        led_strip.show();
+    }
+
+    // determineMovement takes a raw movement from the gyro, normalizes it against the
+    // baseline for that axis (the mpu reports different baseline values for each axis)
+    // and then cuts off at a given threshold, to remove noise
+    // if movement is below threshold, 0 is returned
+    int determineMovement(int movement, int baseline, int threshold)
+    {
+        if (movement < (baseline - threshold))
+        {
+            return abs(movement / 10);
+        }
+        if (movement > (baseline + threshold))
+        {
+            return -1 * abs(movement / 10);
+        }
+        return 0;
+    }
+
+    void displayRanges(int pos, std::vector<std::vector<int>> ranges)
+    {
+        for (auto range : ranges)
+        {
+            int start = range[0];
+            int stop = range[1];
+            int pin = range[2];
+            if (pos < stop && pos > start)
+            {
+                led_strip.setPixelColor(pin, green);
+                break;
+            }
+        }
+        if (pos < ranges[0][0]) {
+            led_strip.setPixelColor(ranges[0][2], green);
+        }
+        if (pos > ranges[ranges.size() - 1][1]) {
+            led_strip.setPixelColor(ranges[ranges.size() - 1][2], green);
+        }
+    }
+
+    int clamp(int i, int low, int high) {
+        if (i < low) {
+            return low;
+        }
+        if (i > high) {
+            return high;
+        }
+        return i;
+    }
+
+    void game3()
+    {
+        int threshold = 400;
+        int xPos = 0;
+        int yPos = 0;
+        int zPos = 0;
+
+        clearDisplay();
+        led_strip.setPixelColor(2, green);
+        led_strip.show();
+
+        while (1)
+        {
             sensors_event_t a, g, temp;
             mpu.getEvent(&a, &g, &temp);
 
@@ -186,11 +255,47 @@ extern "C"
             int y = floor(g.gyro.y * 100); // y normalizes at 1
             int z = floor(g.gyro.z * 100); // z at 3
 
-            ESP_LOGI("game3", "Rotation X: %d, Y: %d, Z: %d", x, y, z);
+            // ESP_LOGI("game3", "Rotation X: %d, Y: %d, Z: %d", x, y, z);
 
-            if g.g
+            // TODO - determine what movement looks like
+            xPos += clamp(determineMovement(x, -14, threshold), -250, 250);
+            yPos += clamp(determineMovement(y, 1, threshold), -250, 250);
+            zPos += clamp(determineMovement(z, 3, threshold), -250, 250);
 
+            //ESP_LOGI("game3", "xpos=%d", xPos);
+            //ESP_LOGI("game3", "ypos=%d", yPos);
+            ESP_LOGI("game3", "zpos=%d z=%d", zPos, z);
 
+            clearDisplay();
+            displayRanges(
+                xPos,
+                {
+                    {-250, -150, 0},
+                    {-150, -50, 1},
+                    {-50, 50, 2},
+                    {50, 150, 3},
+                    {150, 250, 4},
+                });
+            displayRanges(
+                yPos,
+                {
+                    {-250, -150, 5},
+                    {-150, -50, 6},
+                    {-50, 50, 7},
+                    {50, 150, 8},
+                    {150, 250, 9},
+                });
+            displayRanges(
+                zPos,
+                {
+                    {-250, -150, 10},
+                    {-150, -50, 11},
+                    {-50, 50, 12},
+                    {50, 150, 13},
+                    {150, 250, 14},
+                });
+            led_strip.show();
+            
             delay(100);
         }
     }
@@ -221,7 +326,8 @@ extern "C"
         if (!mpu.begin())
         {
             ESP_LOGI("app_main", "Failed to boot MPU6050");
-            while (1);
+            while (1)
+                ;
         }
         mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
         mpu.setGyroRange(MPU6050_RANGE_500_DEG);
