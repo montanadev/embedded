@@ -6,9 +6,11 @@
 #define BUTTON_PIN 4
 #define BUTTON_LED 2
 
-class Game1 {
-    public:
-    Game1(Adafruit_NeoPixel& led) {
+class Game1
+{
+public:
+    Game1(Adafruit_NeoPixel &led)
+    {
         led_strip = led;
     }
 
@@ -18,12 +20,13 @@ class Game1 {
         return buttonState == HIGH;
     }
 
-    void run() {
+    void run()
+    {
         uint32_t white = led_strip.Color(0, 0, 0);
         uint32_t red = led_strip.Color(255, 0, 0);
         uint32_t green = led_strip.Color(0, 255, 0);
         uint32_t blue = led_strip.Color(0, 0, 255);
-        
+
         for (int games = 0; games < 3; games++)
         {
             // initialize game
@@ -89,6 +92,6 @@ class Game1 {
         }
     }
 
-    private:
-        Adafruit_NeoPixel led_strip;
+private:
+    Adafruit_NeoPixel led_strip;
 };

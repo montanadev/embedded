@@ -121,6 +121,24 @@ public:
         return false;
     }
 
+    bool checkAndDisplayWithinRange(int target, int pos, std::vector<std::vector<int>> ranges)
+    {
+        uint32_t white = led_strip.Color(0, 0, 0);
+        uint32_t red = led_strip.Color(255, 0, 0);
+        uint32_t green = led_strip.Color(0, 255, 0);
+        uint32_t blue = led_strip.Color(0, 0, 255);
+        if (withinRange(target, pos, GYRO_RANGES))
+        {
+            // within range, combine into a single green pin
+            displayRangesWithColor(pos, ranges, blue);
+            return true;
+        }
+        // not within range, draw separate pixels
+        displayRangesWithColor(target, ranges, red);
+        displayRangesWithColor(pos, ranges, green);
+        return false;
+    }
+
     void run()
     {
         uint32_t white = led_strip.Color(0, 0, 0);
@@ -128,86 +146,74 @@ public:
         uint32_t green = led_strip.Color(0, 255, 0);
         uint32_t blue = led_strip.Color(0, 0, 255);
 
-        int threshold = 400;
-        int xPos = 0;
-        int yPos = 0;
-        int zPos = 0;
+        for (int games = 0; games < 3; games++) {
+            int threshold;
+            switch(games) {
+                case 0: 
+                    threshold = 400;
+                    break;
+                case 1:
+                    threshold = 200;
+                    break;
+                default:
+                    threshold = 50;
+            }
+            
+            int xPos = 0;
+            int yPos = 0;
+            int zPos = 0;
 
-        int xTarget = randomTarget(50, 250);
-        int yTarget = randomTarget(50, 250);
-        int zTarget = randomTarget(50, 250);
-
-        clearDisplay(led_strip);
-        led_strip.setPixelColor(2, green);
-        led_strip.show();
-
-        while (1)
-        {
-            sensors_event_t a, g, temp;
-            mpu.getEvent(&a, &g, &temp);
-
-            int x = floor(g.gyro.x * 100); // x normalizes at -14
-            int y = floor(g.gyro.y * 100); // y normalizes at 1
-            int z = floor(g.gyro.z * 100); // z at 3
-
-            // ESP_LOGI("game3", "Rotation X: %d, Y: %d, Z: %d", x, y, z);
-
-            // TODO - determine what movement looks like
-            xPos += determineMovement(x, -14, threshold);
-            yPos += determineMovement(y, 1, threshold);
-            zPos += determineMovement(z, 3, threshold);
-
-            xPos = clamp(xPos, -250, 250);
-            yPos = clamp(yPos, -250, 250);
-            zPos = clamp(zPos, -250, 250);
-
-            ESP_LOGI("game3", "xTarget=%d xPos=%d", xTarget, xPos);
-            // ESP_LOGI("game3", "ypos=%d", yPos);
-            // ESP_LOGI("game3", "zpos=%d z=%d", zPos, z);
+            // find random targets within the -250 < x < -50 and 50 < x < 250 ranges
+            // this is because the seeker led always starts at 0, and might trigger 
+            // an automatic win (no fun) 
+            int xTarget = randomTarget(50, 250);
+            int yTarget = randomTarget(50, 250);
+            int zTarget = randomTarget(50, 250);
 
             clearDisplay(led_strip);
-
-            // X axis
-            if (withinRange(xTarget, xPos, GYRO_RANGES))
-            {
-                // within range, combine into a single green pin
-                displayRangesWithColor(xPos, X_GYRO_PIN_RANGES, blue);
-            }
-            else
-            {
-                // not within range, draw separate pixels
-                displayRangesWithColor(xTarget, X_GYRO_PIN_RANGES, red);
-                displayRangesWithColor(xPos, X_GYRO_PIN_RANGES, green);
-            }
-
-            // Y axis
-            if (withinRange(yTarget, yPos, GYRO_RANGES))
-            {
-                // within range, combine into a single green pin
-                displayRangesWithColor(yPos, Y_GYRO_PIN_RANGES, blue);
-            }
-            else
-            {
-                // not within range, draw separate pixels
-                displayRangesWithColor(yTarget, Y_GYRO_PIN_RANGES, red);
-                displayRangesWithColor(yPos, Y_GYRO_PIN_RANGES, green);
-            }
-
-            // Z axis
-            if (withinRange(zTarget, zPos, GYRO_RANGES))
-            {
-                // within range, combine into a single green pin
-                displayRangesWithColor(zPos, Z_GYRO_PIN_RANGES, blue);
-            }
-            else
-            {
-                // not within range, draw separate pixels
-                displayRangesWithColor(zTarget, Z_GYRO_PIN_RANGES, red);
-                displayRangesWithColor(zPos, Z_GYRO_PIN_RANGES, green);
-            }
-
+            led_strip.setPixelColor(2, green);
             led_strip.show();
-            delay(100);
+
+            while (1)
+            {
+                sensors_event_t a, g, temp;
+                mpu.getEvent(&a, &g, &temp);
+
+                // gyro reads in decimal, convert to big, whole numbers
+                int x = floor(g.gyro.x * 100); // x normalizes at -14
+                int y = floor(g.gyro.y * 100); // y normalizes at 1
+                int z = floor(g.gyro.z * 100); // z at 3
+
+                // ESP_LOGI("game3", "Rotation X: %d, Y: %d, Z: %d", x, y, z);
+
+                xPos += determineMovement(x, -14, threshold);
+                yPos += determineMovement(y, 1, threshold);
+                zPos += determineMovement(z, 3, threshold);
+
+                // clamp within the -250 < x < 250 range
+                xPos = clamp(xPos, -250, 250);
+                yPos = clamp(yPos, -250, 250);
+                zPos = clamp(zPos, -250, 250);
+
+                // ESP_LOGI("game3", "xTarget=%d xPos=%d", xTarget, xPos);
+                // ESP_LOGI("game3", "ypos=%d", yPos);
+                // ESP_LOGI("game3", "zpos=%d z=%d", zPos, z);
+
+                clearDisplay(led_strip);
+                bool xWin = checkAndDisplayWithinRange(xTarget, xPos, X_GYRO_PIN_RANGES);
+                bool yWin = checkAndDisplayWithinRange(yTarget, yPos, Y_GYRO_PIN_RANGES);
+                bool zWin = checkAndDisplayWithinRange(zTarget, zPos, Z_GYRO_PIN_RANGES);
+
+                if (xWin && yWin && zWin)
+                {
+                    // if all the leds are within the target ranges, win!
+                    break;
+                }
+
+                led_strip.show();
+                delay(100);
+            }
+            victoryAnimation(led_strip);
         }
     }
 

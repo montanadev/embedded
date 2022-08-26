@@ -4,20 +4,22 @@
 #include "Adafruit_VL53L0X.h"
 #include "utils.cpp"
 
-
-class Game2 {
-    public:
-    Game2(Adafruit_NeoPixel& led, Adafruit_VL53L0X& vl53lox) {
+class Game2
+{
+public:
+    Game2(Adafruit_NeoPixel &led, Adafruit_VL53L0X &vl53lox)
+    {
         led_strip = led;
         lox = vl53lox;
     }
 
-    void run() {
+    void run()
+    {
         uint32_t white = led_strip.Color(0, 0, 0);
         uint32_t red = led_strip.Color(255, 0, 0);
         uint32_t green = led_strip.Color(0, 255, 0);
         uint32_t blue = led_strip.Color(0, 0, 255);
-        
+
         for (int games = 0; games < 3; games++)
         {
             int goalDepth = random(0, 500);
@@ -45,7 +47,7 @@ class Game2 {
         }
     }
 
-    private:
-        Adafruit_NeoPixel led_strip;
-        Adafruit_VL53L0X lox;
+private:
+    Adafruit_NeoPixel led_strip;
+    Adafruit_VL53L0X lox;
 };
