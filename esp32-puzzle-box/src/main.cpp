@@ -1,21 +1,25 @@
 #include "Arduino.h"
 #include <Adafruit_NeoPixel.h>
 #include "Adafruit_VL53L0X.h"
-#include <Adafruit_MPU6050.h>
+#include <Adafruit_L3GD20_U.h>
+#include <Adafruit_GFX.h>
+#include "Adafruit_LEDBackpack.h"
 #include <esp_log.h>
 #include <vector>
 #include "../lib/game_1.cpp"
 #include "../lib/game_2.cpp"
 #include "../lib/game_3.cpp"
+#include "../lib/game_4.cpp"
 
 extern "C"
 {
 #define NEOPIXEL_LED_PIN 23
 #define NEOPIXEL_LED_COUNT 20
-    
 
+    // Adafruit 7seg
+    Adafruit_7segment matrix = Adafruit_7segment();
     // Adafruit_MPU6050 xyz gyro
-    Adafruit_MPU6050 mpu;
+    Adafruit_L3GD20_Unified mpu = Adafruit_L3GD20_Unified(20);
     // Adafruit_VL53L0X depth sensor
     Adafruit_VL53L0X lox = Adafruit_VL53L0X();
     // Adafruit_NeoPixel
@@ -47,6 +51,8 @@ extern "C"
     {
         initArduino();
 
+        esp_log_level_set("gpio", ESP_LOG_NONE);
+
         // initialize neopixels
         ESP_LOGI("app_main", "Initializing strip...");
         led_strip.begin();
@@ -61,8 +67,8 @@ extern "C"
             ESP_LOGI("app_main", "Failed to boot VL53L0X");
             while (1)
                 ;
-            ESP_LOGI("app_main", "Initializing VL53L0X...done");
         }
+        ESP_LOGI("app_main", "Initializing VL53L0X...done");
 
         // initialize gyro
         ESP_LOGI("app_main", "Initializing MPU6050...");
@@ -72,23 +78,41 @@ extern "C"
             while (1)
                 ;
         }
-        mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
-        mpu.setGyroRange(MPU6050_RANGE_500_DEG);
-        mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
         ESP_LOGI("app_main", "Initializing MPU6050...done");
 
         // initialize button
         pinMode(BUTTON_LED, OUTPUT);
         pinMode(BUTTON_PIN, INPUT);
 
+        // initialize motor
+        pinMode(MOTOR_PIN, OUTPUT);
+
+        // initalize sound
+        // pinMode(SOUND_PIN, INPUT);
+
+        // initialize 7seg
+        matrix.begin(0x70);
+
+        for (uint16_t counter = 0; counter < 9999; counter++)
+        {
+            matrix.println(counter);
+            matrix.writeDisplay();
+            delay(10);
+        }
+
+        matrix.writeDisplay();
+
         // initialize games
         Game1 g1 = Game1(led_strip);
         Game2 g2 = Game2(led_strip, lox);
         Game3 g3 = Game3(led_strip, mpu);
+        Game4 g4 = Game4();
 
         // play!
+
         g1.run();
         g2.run();
         g3.run();
+        g4.run();
     }
 }

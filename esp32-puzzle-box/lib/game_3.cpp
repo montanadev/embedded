@@ -1,7 +1,7 @@
 #include "Arduino.h"
 #include <esp_log.h>
 #include <Adafruit_NeoPixel.h>
-#include <Adafruit_MPU6050.h>
+#include <Adafruit_L3GD20_U.h>
 #include <vector>
 #include "utils.cpp"
 
@@ -36,7 +36,7 @@ std::vector<std::vector<int>> Z_GYRO_PIN_RANGES = {
 class Game3
 {
 public:
-    Game3(Adafruit_NeoPixel &led, Adafruit_MPU6050 &mpu6050)
+    Game3(Adafruit_NeoPixel &led, Adafruit_L3GD20_Unified &mpu6050)
     {
         led_strip = led;
         mpu = mpu6050;
@@ -176,8 +176,8 @@ public:
 
             while (1)
             {
-                sensors_event_t a, g, temp;
-                mpu.getEvent(&a, &g, &temp);
+                sensors_event_t g;
+                mpu.getEvent(&g);
 
                 // gyro reads in decimal, convert to big, whole numbers
                 int x = floor(g.gyro.x * 100); // x normalizes at -14
@@ -219,5 +219,5 @@ public:
 
 private:
     Adafruit_NeoPixel led_strip;
-    Adafruit_MPU6050 mpu;
+    Adafruit_L3GD20_Unified mpu;
 };

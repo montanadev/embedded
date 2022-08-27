@@ -22,7 +22,7 @@ public:
 
         for (int games = 0; games < 3; games++)
         {
-            int goalDepth = random(0, 500);
+            int goalDepth = random(0, 300);
             int padding = 20;
             while (1)
             {

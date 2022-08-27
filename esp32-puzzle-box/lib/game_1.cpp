@@ -5,6 +5,7 @@
 
 #define BUTTON_PIN 4
 #define BUTTON_LED 2
+#define MOTOR_PIN 32
 
 class Game1
 {
@@ -17,6 +18,12 @@ public:
     bool readButton()
     {
         int buttonState = digitalRead(BUTTON_PIN);
+        if (buttonState == HIGH) {
+            analogWrite(MOTOR_PIN, 255);
+            delay(100);
+            analogWrite(MOTOR_PIN, 0);
+        }
+
         return buttonState == HIGH;
     }
 

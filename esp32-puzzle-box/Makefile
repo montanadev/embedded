@@ -3,7 +3,7 @@
 build:
 	pio run -e nodemcu-32s
 
-run:
+upload:
 	pio run -e nodemcu-32s -t upload
 
 monitor:
@@ -14,3 +14,6 @@ test:
 
 clean:
 	pio run --target clean
+
+menuconfig:
+	pio run -t menuconfig
