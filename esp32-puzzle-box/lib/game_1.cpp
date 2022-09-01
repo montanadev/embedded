@@ -3,9 +3,8 @@
 #include <Adafruit_NeoPixel.h>
 #include "utils.cpp"
 
-#define BUTTON_PIN 4
+#define BUTTON_PIN 13
 #define BUTTON_LED 2
-#define MOTOR_PIN 32
 
 class Game1
 {
@@ -18,12 +17,6 @@ public:
     bool readButton()
     {
         int buttonState = digitalRead(BUTTON_PIN);
-        if (buttonState == HIGH) {
-            analogWrite(MOTOR_PIN, 255);
-            delay(100);
-            analogWrite(MOTOR_PIN, 0);
-        }
-
         return buttonState == HIGH;
     }
 
@@ -33,7 +26,7 @@ public:
         uint32_t red = led_strip.Color(255, 0, 0);
         uint32_t green = led_strip.Color(0, 255, 0);
         uint32_t blue = led_strip.Color(0, 0, 255);
-
+        
         for (int games = 0; games < 3; games++)
         {
             // initialize game
@@ -42,6 +35,7 @@ public:
             int goalLed = random(0, 20);
 
             bool playing = true;
+            int failures = 0;
             while (playing)
             {
                 led_strip.setPixelColor(goalLed, green);
@@ -79,6 +73,9 @@ public:
                             clearDisplay(led_strip);
                             led_strip.setPixelColor(goalLed, green);
                             led_strip.show();
+
+                            // prevent player from holding the button
+                            failures++;    
                         }
                     }
                     // TODO - move the delay into the button and offer more checks
@@ -88,13 +85,20 @@ public:
                     }
                     if (games == 1)
                     {
-                        delay(80);
+                        delay(50);
                     }
                     if (games == 2)
                     {
-                        delay(50);
+                        delay(30);
+                    }
+                    if (failures > 3) {
+                        playing = false;
+                        break;
                     }
                 }
+            }
+            if (failures > 3) {
+                games = -1;
             }
         }
     }

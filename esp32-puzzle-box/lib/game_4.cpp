@@ -3,9 +3,7 @@
 #include <Adafruit_NeoPixel.h>
 #include "utils.cpp"
 
-
 #define SOUND_PIN 34
-
 
 const int sampleWindow = 50; // Sample window width in mS (50 mS = 20Hz)
 unsigned int sample;
@@ -49,7 +47,6 @@ public:
 
             ESP_LOGI("game4", "volts=%f", volts);
             delay(100);
-
         }
     }
 };
