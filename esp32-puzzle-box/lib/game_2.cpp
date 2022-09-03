@@ -1,25 +1,16 @@
 #include "Arduino.h"
 #include <esp_log.h>
-#include <Adafruit_NeoPixel.h>
 #include "Adafruit_VL53L0X.h"
+#include "led.cpp"
 #include "utils.cpp"
 
 class Game2
 {
 public:
-    Game2(Adafruit_NeoPixel &led, Adafruit_VL53L0X &vl53lox)
-    {
-        led_strip = led;
-        lox = vl53lox;
-    }
+    explicit Game2(LEDStrip *led, Adafruit_VL53L0X &vl53lox) : led_strip(led), lox(vl53lox) {}
 
     void run()
     {
-        uint32_t white = led_strip.Color(0, 0, 0);
-        uint32_t red = led_strip.Color(255, 0, 0);
-        uint32_t green = led_strip.Color(0, 255, 0);
-        uint32_t blue = led_strip.Color(0, 0, 255);
-
         for (int games = 0; games < 3; games++)
         {
             int goalDepth = random(0, 300);
@@ -35,19 +26,19 @@ public:
                     break;
                 }
 
-                clearDisplay(led_strip);
+                led_strip->clear();
                 int pixelGoalPost = floor(goalDepth / 25);
                 int pixelCurrentDepth = floor(measure.RangeMilliMeter / 25);
-                led_strip.setPixelColor(pixelGoalPost, green);
-                led_strip.setPixelColor(pixelCurrentDepth, blue);
-                led_strip.show();
+                led_strip->setPixelColor(pixelGoalPost, led_strip->green);
+                led_strip->setPixelColor(pixelCurrentDepth, led_strip->blue);
+                led_strip->show();
                 delay(100);
             }
-            victoryAnimation(led_strip);
+            led_strip->victory();
         }
     }
 
 private:
-    Adafruit_NeoPixel led_strip;
+    LEDStrip *led_strip;
     Adafruit_VL53L0X lox;
 };

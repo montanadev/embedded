@@ -1,60 +1,54 @@
-#pragma once 
+#pragma once
 #include <Adafruit_NeoPixel.h>
 
-void victoryAnimation(Adafruit_NeoPixel &led)
-{
-    uint32_t white = led.Color(0, 0, 0);
-    uint32_t red = led.Color(255, 0, 0);
-    uint32_t green = led.Color(0, 255, 0);
-    uint32_t blue = led.Color(0, 0, 255);
 
-    for (int times = 0; times < 5; times++)
+std::string urlDecode(const std::string &value)
+{
+    std::string result;
+    result.reserve(value.size());
+
+    for (std::size_t i = 0; i < value.size(); ++i)
     {
-        for (int i = 0; i < led.numPixels(); i++)
+        auto ch = value[i];
+
+        if (ch == '%' && (i + 2) < value.size())
         {
-            led.setPixelColor(i, white);
+            auto hex = value.substr(i + 1, 2);
+            auto dec = static_cast<char>(std::strtol(hex.c_str(), nullptr, 16));
+            result.push_back(dec);
+            i += 2;
         }
-        led.show();
-        delay(100);
-        for (int i = 0; i < led.numPixels(); i++)
+        else if (ch == '+')
         {
-            led.setPixelColor(i, blue);
+            result.push_back(' ');
         }
-        led.show();
-        delay(100);
+        else
+        {
+            result.push_back(ch);
+        }
     }
+
+    return result;
 }
 
-void failedAnimation(Adafruit_NeoPixel &led)
+int getUrlParam(char *key, const char *parameter, char *value)
 {
-    uint32_t white = led.Color(0, 0, 0);
-    uint32_t red = led.Color(255, 0, 0);
-    uint32_t green = led.Color(0, 255, 0);
-    uint32_t blue = led.Color(0, 0, 255);
-
-    for (int times = 0; times < 1; times++)
+    char *addr1 = strstr(parameter, key);
+    if (addr1 == NULL)
+        return 0;
+    
+    char *addr2 = addr1 + strlen(key);
+    
+    char *addr3 = strstr(addr2, "&");
+    if (addr3 == NULL)
     {
-        for (int i = 0; i < led.numPixels(); i++)
-        {
-            led.setPixelColor(i, white);
-        }
-        led.show();
-        delay(100);
-        for (int i = 0; i < led.numPixels(); i++)
-        {
-            led.setPixelColor(i, red);
-        }
-        led.show();
-        delay(100);
+        strcpy(value, addr2);
     }
-}
-
-void clearDisplay(Adafruit_NeoPixel &led)
-{
-    uint32_t white = led.Color(0, 0, 0);
-    for (int i = 0; i < led.numPixels(); i++)
+    else
     {
-        led.setPixelColor(i, white);
+        int length = addr3 - addr2;
+        strncpy(value, addr2, length);
+        value[length] = 0;
     }
-    led.show();
+    return strlen(value);
 }

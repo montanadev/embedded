@@ -1,4 +1,4 @@
-.PHONY: build run monitor test clean
+.PHONY: build upload monitor test clean menuconfig check 
 
 build:
 	pio run -e nodemcu-32s
@@ -17,3 +17,6 @@ clean:
 
 menuconfig:
 	pio run -t menuconfig
+
+check:
+	pio check --skip-packages --fail-on-defect low
