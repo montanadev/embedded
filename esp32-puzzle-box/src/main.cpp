@@ -4,13 +4,7 @@
 #include <Adafruit_L3GD20_U.h>
 #include <Adafruit_GFX.h>
 #include "Adafruit_LEDBackpack.h"
-#include <WiFi.h>
-#include <esp_http_server.h>
 #include <esp_log.h>
-#include "time.h"
-#include <esp_system.h>
-#include <vector>
-#include <sys/param.h>
 #include "nvs_flash.h"
 #include "nvs.h"
 #include "../lib/game_1.cpp"
@@ -19,16 +13,12 @@
 #include "../lib/game_4.cpp"
 #include "../lib/web.cpp"
 #include "../lib/wifi.cpp"
+#include "../lib/clock.cpp"
 
 extern "C"
 {
 #define NEOPIXEL_LED_PIN 23
 #define NEOPIXEL_LED_COUNT 20
-
-    // ntp
-    const char *ntpServer = "pool.ntp.org";
-    const long gmtOffset_sec = 3600;
-    const int daylightOffset_sec = 3600;
 
     // Adafruit 7seg
     Adafruit_7segment matrix = Adafruit_7segment();
@@ -38,35 +28,6 @@ extern "C"
     Adafruit_VL53L0X lox = Adafruit_VL53L0X();
     // LEDStrip 
     LEDStrip* led_strip = new LEDStrip();
-
-    void showClock()
-    {
-        bool blink = false;
-        while (1)
-        {
-            
-            struct tm timeinfo;
-            if (!getLocalTime(&timeinfo))
-            {
-                ESP_LOGI("showClock", "Failed to get time");
-                delay(1000);
-                continue;
-            }
-            int displayValue = timeinfo.tm_hour * 100 + timeinfo.tm_min;
-            if (timeinfo.tm_hour == 0)
-            {
-                displayValue += 1200;
-            }
-            matrix.print(displayValue, DEC);
-
-            for (int i = 0; i < 60; i++) {
-                blink = !blink;
-                matrix.drawColon(blink);
-                matrix.writeDisplay();
-                delay(1000);
-            }
-        }
-    }
 
     // cppcheck-suppress unusedFunction
     void app_main()
@@ -88,10 +49,7 @@ extern "C"
         ESP_ERROR_CHECK(err);
 
         // initialize wifi
-        wifiStart();
-
-        // initalize ntp
-        configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+        bool isStationMode = wifiStartInStationMode();
 
         // start the webserver
         webserverStart();
@@ -120,27 +78,9 @@ extern "C"
         pinMode(BUTTON_LED, OUTPUT);
         pinMode(BUTTON_PIN, INPUT);
 
-        // initialize motor
-        // pinMode(MOTOR_PIN, OUTPUT);
-
-        // initalize sound
-        // pinMode(SOUND_PIN, INPUT);
-
         // initialize 7seg
         matrix.begin(0x70);
         matrix.setBrightness(1);
-
-        // for (uint16_t counter = 0; counter < 99; counter++)
-        // {
-        //     matrix.println(counter);
-        //     matrix.writeDisplay();
-        //     delay(10);
-        // }
-
-        // matrix.writeDisplay();
-
-        showClock();
-        led_strip->clear();
 
         // initialize games
         Game1 g1 = Game1(led_strip);
@@ -153,16 +93,19 @@ extern "C"
         matrix.println(i++);
         matrix.writeDisplay();
         // game1 is special: if input isn't detected, put into wall clock mode
-        if (!g1.run(stationMode))
+        if (!g1.run(isStationMode))
         {
-            showClock();
+            showClock(matrix);
         }
+
         matrix.println(i++);
         matrix.writeDisplay();
         g2.run();
+        
         matrix.println(i++);
         matrix.writeDisplay();
         g3.run();
+        
         matrix.println(i++);
         matrix.writeDisplay();
         g4.run();
