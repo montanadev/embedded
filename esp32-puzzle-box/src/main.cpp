@@ -8,9 +8,7 @@
 #include "nvs_flash.h"
 #include "nvs.h"
 #include "../lib/game_1.cpp"
-#include "../lib/game_2.cpp"
-#include "../lib/game_3.cpp"
-#include "../lib/game_4.cpp"
+
 #include "../lib/web.cpp"
 #include "../lib/wifi.cpp"
 #include "../lib/clock.cpp"
@@ -26,13 +24,13 @@ extern "C"
     Adafruit_L3GD20_Unified mpu = Adafruit_L3GD20_Unified(20);
     // Adafruit_VL53L0X depth sensor
     Adafruit_VL53L0X lox = Adafruit_VL53L0X();
-    // LEDStrip 
-    LEDStrip* led_strip = new LEDStrip();
 
     // cppcheck-suppress unusedFunction
     void app_main()
     {
+        ESP_LOGI("app_main", "Initializing arduino framework...");
         initArduino();
+        ESP_LOGI("app_main", "Initializing arduino framework...done");
 
         // esp-idf GPIO read logs are extremely noisy -- disable
         esp_log_level_set("gpio", ESP_LOG_NONE);
@@ -49,11 +47,15 @@ extern "C"
         ESP_ERROR_CHECK(err);
 
         // initialize wifi
+        ESP_LOGI("app_main", "Checking NVS station mode...");
         bool isStationMode = wifiStartInStationMode();
+        ESP_LOGI("app_main", "Checking NVS station mode...done");
 
         // start the webserver
+        ESP_LOGI("app_main", "Starting webserver...");
         webserverStart();
-        
+        ESP_LOGI("app_main", "Starting webserver...done");
+
         // initialize lox
         ESP_LOGI("app_main", "Initializing VL53L0X...");
         if (!lox.begin())
@@ -74,19 +76,29 @@ extern "C"
         }
         ESP_LOGI("app_main", "Initializing MPU6050...done");
 
+        ESP_LOGI("app_main", "Initializing buttons...");
         // initialize button
         pinMode(BUTTON_LED, OUTPUT);
         pinMode(BUTTON_PIN, INPUT);
+        ESP_LOGI("app_main", "Initializing buttons...done");
 
+        ESP_LOGI("app_main", "Initializing 7seg...");
         // initialize 7seg
         matrix.begin(0x70);
         matrix.setBrightness(1);
+        ESP_LOGI("app_main", "Initializing 7seg...done");
 
         // initialize games
+        ESP_LOGI("app_main", "Initializing games...");
+
+        // LEDStrip
+        LEDStrip *led_strip = new LEDStrip();
+        led_strip->failed();
+        ESP_LOGI("app_main", "Pixels: %d", led_strip->numPixels());
+
+        
         Game1 g1 = Game1(led_strip);
-        Game2 g2 = Game2(led_strip, lox);
-        Game3 g3 = Game3(led_strip, mpu);
-        Game4 g4 = Game4();
+        ESP_LOGI("app_main", "Initializing games...done");
 
         int i = 0;
         // play!
@@ -100,14 +112,6 @@ extern "C"
 
         matrix.println(i++);
         matrix.writeDisplay();
-        g2.run();
         
-        matrix.println(i++);
-        matrix.writeDisplay();
-        g3.run();
-        
-        matrix.println(i++);
-        matrix.writeDisplay();
-        g4.run();
     }
 }
