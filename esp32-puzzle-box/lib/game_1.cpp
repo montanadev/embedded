@@ -3,7 +3,7 @@
 #include "utils.cpp"
 #include "led.cpp"
 
-#define BUTTON_PIN 13
+#define BUTTON_PIN 4
 #define BUTTON_LED 2
 
 class Game1

@@ -1,7 +1,6 @@
 #pragma once
 #include <Adafruit_NeoPixel.h>
 
-
 std::string urlDecode(const std::string &value)
 {
     std::string result;
@@ -36,9 +35,9 @@ int getUrlParam(char *key, const char *parameter, char *value)
     char *addr1 = strstr(parameter, key);
     if (addr1 == NULL)
         return 0;
-    
+
     char *addr2 = addr1 + strlen(key);
-    
+
     char *addr3 = strstr(addr2, "&");
     if (addr3 == NULL)
     {

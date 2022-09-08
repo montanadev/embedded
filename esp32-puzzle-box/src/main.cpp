@@ -26,8 +26,6 @@ extern "C"
     Adafruit_L3GD20_Unified mpu = Adafruit_L3GD20_Unified(20);
     // Adafruit_VL53L0X depth sensor
     Adafruit_VL53L0X lox = Adafruit_VL53L0X();
-    // LEDStrip 
-    LEDStrip* led_strip = new LEDStrip();
 
     // cppcheck-suppress unusedFunction
     void app_main()
@@ -81,6 +79,9 @@ extern "C"
         // initialize 7seg
         matrix.begin(0x70);
         matrix.setBrightness(1);
+
+        // LEDStrip 
+        LEDStrip *led_strip = new LEDStrip();
 
         // initialize games
         Game1 g1 = Game1(led_strip);
