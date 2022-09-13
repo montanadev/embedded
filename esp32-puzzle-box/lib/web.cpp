@@ -5,6 +5,7 @@
 #include "nvs.h"
 #include "utils.cpp"
 #include "wifi.cpp"
+#include "clock.cpp"
 
 extern const char index_html_start[] asm("_binary_index_html_start");
 extern const char index_html_end[] asm("_binary_index_html_end");
@@ -16,6 +17,12 @@ static esp_err_t indexHandler(httpd_req_t *req)
     httpd_resp_set_type(req, "text/html");
     httpd_resp_send(req, index_html_start, root_len);
     return ESP_OK;
+}
+
+void restartWithDelay(void *parameter)
+{
+    delay(5000);
+    esp_restart();
 }
 
 static esp_err_t settingsHandler(httpd_req_t *req)
@@ -46,18 +53,24 @@ static esp_err_t settingsHandler(httpd_req_t *req)
         data += buf[i];
     }
     data = urlDecode(data);
-    ESP_LOGI("settingsHandler", "data: %s", data.c_str());
+    // ESP_LOGD("settingsHandler", "data: %s", data.c_str());
 
     char ssid[60];
     char password[60];
-    getUrlParam("ssid=", data.c_str(), ssid);
-    getUrlParam("password=", data.c_str(), password);
+    char timezone[12];
+    if (getUrlParam("ssid=", data.c_str(), ssid) && getUrlParam("password=", data.c_str(), password))
+    {
+        setWifiStationMode(ssid, password);
+    }
+    if (getUrlParam("timezone=", data.c_str(), timezone))
+    {
+        setTimezone(atoi(timezone));
+    }
+    httpd_resp_sendstr(req, "Rebooting puzzle box...<br /><br /><i>Note: if I fail to connect to the WiFi, I'll eventually give up and create an AP (so you can reach these settings again)</i>\n");
 
-    setWifiStationMode(ssid, password);
+    // defer the reboot, allow the current thread to return a HTTP response
+    xTaskCreate(restartWithDelay, "restartWithDelay", 10000, NULL, 1, NULL);
 
-    httpd_resp_sendstr(req, "Rebooting puzzle box...");
-
-    esp_restart();
     return ESP_OK;
 }
 

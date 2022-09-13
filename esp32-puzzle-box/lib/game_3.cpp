@@ -135,18 +135,7 @@ public:
     {
         for (int games = 0; games < 3; games++)
         {
-            int threshold;
-            switch (games)
-            {
-            case 0:
-                threshold = 400;
-                break;
-            case 1:
-                threshold = 200;
-                break;
-            default:
-                threshold = 50;
-            }
+            int threshold = 10;
 
             int xPos = 0;
             int yPos = 0;
@@ -175,9 +164,9 @@ public:
 
                 // ESP_LOGI("game3", "Rotation X: %d, Y: %d, Z: %d", x, y, z);
 
-                xPos += determineMovement(x, -14, threshold);
-                yPos += determineMovement(y, 1, threshold);
-                zPos += determineMovement(z, 3, threshold);
+                xPos += determineMovement(x, -14, threshold) * 1.5;
+                yPos += determineMovement(y, 1, threshold) * 1.5;
+                zPos += determineMovement(z, 3, threshold) * 1.5;
 
                 // clamp within the -250 < x < 250 range
                 xPos = clamp(xPos, -250, 250);

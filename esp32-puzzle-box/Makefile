@@ -20,3 +20,6 @@ menuconfig:
 
 check:
 	pio check --skip-packages --fail-on-defect low
+
+erase: 
+	pio run --target erase -e nodemcu-32s

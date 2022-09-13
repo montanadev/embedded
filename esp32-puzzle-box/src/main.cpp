@@ -10,7 +10,6 @@
 #include "../lib/game_1.cpp"
 #include "../lib/game_2.cpp"
 #include "../lib/game_3.cpp"
-#include "../lib/game_4.cpp"
 #include "../lib/web.cpp"
 #include "../lib/wifi.cpp"
 #include "../lib/clock.cpp"
@@ -46,11 +45,10 @@ extern "C"
         }
         ESP_ERROR_CHECK(err);
 
-        // initialize wifi
-        bool isStationMode = wifiStartInStationMode();
+        int mode = nvs_read_int("sta_mode", -1);
 
-        // start the webserver
-        webserverStart();
+        // initialize wifi
+        //bool isStationMode = wifiStartInStationMode();
         
         // initialize lox
         ESP_LOGI("app_main", "Initializing VL53L0X...");
@@ -87,16 +85,21 @@ extern "C"
         Game1 g1 = Game1(led_strip);
         Game2 g2 = Game2(led_strip, lox);
         Game3 g3 = Game3(led_strip, mpu);
-        Game4 g4 = Game4();
 
         int i = 0;
         // play!
         matrix.println(i++);
         matrix.writeDisplay();
         // game1 is special: if input isn't detected, put into wall clock mode
-        if (!g1.run(isStationMode))
+        if (!g1.run(mode == 1))
         {
-            showClock(matrix);
+            // start the webserver, already beat the game
+            wifiStartInStationMode();
+            webserverStart();
+
+            led_strip->clear();
+            int timezone = getTimezone();
+            showClock(matrix, timezone);
         }
 
         matrix.println(i++);
@@ -109,6 +112,15 @@ extern "C"
         
         matrix.println(i++);
         matrix.writeDisplay();
-        g4.run();
+        led_strip->clear();
+
+        // start the webserver, and the final challenge
+        wifiStartInStationMode();
+        webserverStart();
+    
+        // nothing to do but wait
+        while(1) {
+            delay(1000);
+        }
     }
 }
