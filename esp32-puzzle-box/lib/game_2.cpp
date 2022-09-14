@@ -1,13 +1,14 @@
 #include "Arduino.h"
 #include <esp_log.h>
 #include "Adafruit_VL53L0X.h"
+#include "Adafruit_LEDBackpack.h"
 #include "led.cpp"
 #include "utils.cpp"
 
 class Game2
 {
 public:
-    explicit Game2(LEDStrip *led, Adafruit_VL53L0X &vl53lox) : led_strip(led), lox(vl53lox) {}
+    explicit Game2(LEDStrip *led, Adafruit_7segment &matrix, Adafruit_VL53L0X &vl53lox) : led_strip(led), matrix(matrix), lox(vl53lox) {}
 
     void run()
     {
@@ -32,6 +33,10 @@ public:
                 led_strip->setPixelColor(pixelGoalPost, led_strip->green);
                 led_strip->setPixelColor(pixelCurrentDepth, led_strip->blue);
                 led_strip->show();
+
+                ESP_LOGI("ASDF", "%f", floor(measure.RangeMilliMeter / 25));
+                matrix.println(floor(measure.RangeMilliMeter / 25));
+                matrix.writeDisplay();
                 delay(100);
             }
             led_strip->victory();
@@ -40,5 +45,6 @@ public:
 
 private:
     LEDStrip *led_strip;
+    Adafruit_7segment matrix;
     Adafruit_VL53L0X lox;
 };

@@ -1,114 +1,42 @@
 #pragma once
 
 #include <esp_log.h>
-#include "nvs_flash.h"
-#include "nvs.h"
+#include "nvs.cpp"
 #include <WiFi.h>
 
-bool isWifiStationMode(char *ssid, char *password)
+bool isWifiStationMode()
 {
-    nvs_handle_t commitHandler;
-    esp_err_t err = nvs_open("storage", NVS_READWRITE, &commitHandler);
-    if (err != ESP_OK)
-    {
-        ESP_LOGI("isWifiStationMode", "Error (%s) opening NVS handle", esp_err_to_name(err));
-        return false;
-    }
-
-    int32_t i = 0;
-    err = nvs_get_i32(commitHandler, "sta_mode", &i);
-    if (err == ESP_ERR_NVS_NOT_FOUND)
-    {
-        // nothing has been written, still in AP mode
-        return false;
-    }
-    if (err != ESP_OK)
-    {
-        ESP_LOGI("isWifiStationMode", "Error (%s) reading from NVS", esp_err_to_name(err));
-        return false;
-    }
-    size_t size = 60;
-    err = nvs_get_str(commitHandler, "sta_ssid", ssid, &size);
-    if (err != ESP_OK)
-    {
-        ESP_LOGI("isWifiStationMode", "Error (%s) reading ssid from NVS", esp_err_to_name(err));
-        return false;
-    }
-    size = 60;
-    err = nvs_get_str(commitHandler, "sta_password", password, &size);
-    if (err != ESP_OK)
-    {
-        ESP_LOGI("isWifiStationMode", "Error (%s) reading password from NVS", esp_err_to_name(err));
-        return false;
-    }
-
-    return i == 1;
+    int mode = nvs_read_int("sta_mode", 0);
+    return mode == 1;
 }
 
 void setWifiStationMode(char *ssid, char *password)
 {
-    nvs_handle_t commitHandler;
-    esp_err_t err = nvs_open("storage", NVS_READWRITE, &commitHandler);
-    if (err != ESP_OK)
-    {
-        ESP_LOGI("setWifiStationMode", "Error (%s) opening NVS handle", esp_err_to_name(err));
-        return;
-    }
-
     if (ssid && password && !ssid[0] && !password[0])
     {
-        // reset back to AP mode
-        err = nvs_set_i32(commitHandler, "sta_mode", 0);
-        if (err != ESP_OK)
-        {
-            ESP_LOGI("setWifiStationMode", "Error (%s) writing to NVS", esp_err_to_name(err));
-            return;
-        }
-        // erase ssid values
-        nvs_erase_key(commitHandler, "sta_ssid");
-        nvs_erase_key(commitHandler, "sta_password");
+        // given empty input, back to AP mode
+        nvs_write_int("sta_mode", 0);
+        nvs_delete("sta_ssid");
+        nvs_delete("sta_password");
     }
     else
     {
         // write ssid values
-        err = nvs_set_i32(commitHandler, "sta_mode", 1);
-        if (err != ESP_OK)
-        {
-            ESP_LOGI("setWifiStationMode", "Error (%s) writing to NVS", esp_err_to_name(err));
-            return;
-        }
-        err = nvs_set_str(commitHandler, "sta_ssid", ssid);
-        if (err != ESP_OK)
-        {
-            ESP_LOGI("setWifiStationMode", "Error (%s) writing to NVS", esp_err_to_name(err));
-            return;
-        }
-        err = nvs_set_str(commitHandler, "sta_password", password);
-        if (err != ESP_OK)
-        {
-            ESP_LOGI("setWifiStationMode", "Error (%s) writing to NVS", esp_err_to_name(err));
-            return;
-        }
+        nvs_write_int("sta_mode", 1);
+        nvs_write_str("sta_ssid", ssid);
+        nvs_write_str("sta_password", password);
     }
-    // finally, commit
-    err = nvs_commit(commitHandler);
-    if (err != ESP_OK)
-    {
-        ESP_LOGI("setWifiStationMode", "Error (%s) closing NVS handle", esp_err_to_name(err));
-        return;
-    }
-    nvs_close(commitHandler);
 }
 
 bool wifiStartInStationMode()
 {
-    char ssid[60];
-    char password[60];
     int totalAttempts = 0;
-    if (isWifiStationMode(ssid, password))
+    if (isWifiStationMode())
     {
         while (totalAttempts < 5)
         {
+            char *ssid = nvs_read_str("sta_ssid", "");
+            char *password = nvs_read_str("sta_password", "");
             int connectionAttempts = 0;
             WiFi.mode(WIFI_STA);
             WiFi.begin(ssid, password);

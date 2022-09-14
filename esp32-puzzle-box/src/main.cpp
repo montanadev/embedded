@@ -83,7 +83,7 @@ extern "C"
 
         // initialize games
         Game1 g1 = Game1(led_strip);
-        Game2 g2 = Game2(led_strip, lox);
+        Game2 g2 = Game2(led_strip, matrix, lox);
         Game3 g3 = Game3(led_strip, mpu);
 
         int i = 0;

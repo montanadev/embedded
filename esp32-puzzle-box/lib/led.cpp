@@ -11,11 +11,9 @@ class LEDStrip
 public:
     LEDStrip() : led_strip(Adafruit_NeoPixel(NEOPIXEL_LED_COUNT, NEOPIXEL_LED_PIN, NEO_GRB + NEO_KHZ800))
     {
-        ESP_LOGI("game1", "inside constructor: %d", led_strip.numPixels());
         led_strip.begin();
         led_strip.show();
         led_strip.setBrightness(10); // max 255
-        ESP_LOGI("game1", "inside constructor: %d...done", led_strip.numPixels());
     }
 
     int numPixels()
