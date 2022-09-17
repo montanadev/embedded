@@ -1,0 +1,55 @@
+<html>
+
+<head>
+    <title>Puzzle Box Settings</title>
+</head>
+
+<body>
+    <h1>Congratulations!</h1>
+    <p>You've solved the puzzle box!</p>
+
+    <h2>I am now a desktop clock</h2>
+    <p>Give me a <b>2.4GHz</b> WiFi connection, and I'll faithfully tell the time.</p>
+
+    <form action="settings" method="post">
+        <input type="text" id="ssid" name="ssid" placeholder="ssid" /><br />
+        <input type="password" id="password" name="password" placeholder="password" /><br />
+        <select id="timezone" name="timezone">
+            <option value="-14">UTC-14:00</option>
+            <option value="-13">UTC-13:00</option>
+            <option value="-12">UTC-12:00</option>
+            <option value="-11">UTC-11:00</option>
+            <option value="-10">UTC-10:00</option>
+            <option value="-9">UTC-09:00</option>
+            <option value="-8">UTC-08:00</option>
+            <option value="-7">UTC-07:00</option>
+            <option value="-6">UTC-06:00</option>
+            <option value="-5">UTC-05:00</option>
+            <option value="-4">UTC-04:00</option>
+            <option value="-3">UTC-03:00</option>
+            <option value="-2">UTC-02:00</option>
+            <option value="-1">UTC-01:00</option>
+            <option value="0">UTC&#177;00:00</option>
+            <option value="1">UTC+01:00</option>
+            <option value="2">UTC+02:00</option>
+            <option value="3">UTC+03:00</option>
+            <option value="4">UTC+04:00</option>
+            <option value="5">UTC+05:00</option>
+            <option value="6">UTC+06:00</option>
+            <option value="7">UTC+07:00</option>
+            <option value="8">UTC+08:00</option>
+            <option value="9">UTC+09:00</option>
+            <option value="10">UTC+10:00</option>
+            <option value="11">UTC+11:00</option>
+            <option value="12">UTC+12:00</option>
+        </select><br />
+        <input type="submit" value="Save">
+    </form>
+
+    <i>Note: if I fail to connect to the WiFi, I'll eventually give up and create an AP (so you can reach these settings
+        again)</i>
+
+    <p>All the <a href="https://github.com/montanadev/embedded">code for the puzzle box is here</a></p>
+</body>
+
+</html>

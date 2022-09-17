@@ -6,3 +6,7 @@
 cmake-build-debug/
 secrets.h
 .DS_Store
+*.old
+
+# pio init makes .gitignores in project folders, ignore
+**/.gitignore
