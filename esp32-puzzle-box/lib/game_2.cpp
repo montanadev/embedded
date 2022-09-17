@@ -34,7 +34,6 @@ public:
                 led_strip->setPixelColor(pixelCurrentDepth, led_strip->blue);
                 led_strip->show();
 
-                ESP_LOGI("ASDF", "%f", floor(measure.RangeMilliMeter / 25));
                 matrix.println(floor(measure.RangeMilliMeter / 25));
                 matrix.writeDisplay();
                 delay(100);

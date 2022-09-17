@@ -2,6 +2,7 @@
 
 #include <Adafruit_NeoPixel.h>
 #include <esp_log.h>
+#include "button.cpp"
 
 #define NEOPIXEL_LED_PIN 23
 #define NEOPIXEL_LED_COUNT 20
@@ -66,6 +67,23 @@ public:
             }
             led_strip.show();
             delay(100);
+        }
+    }
+
+    void rainbowWait()
+    {
+        while (1)
+        {
+            for (long firstPixelHue = 0; firstPixelHue < 5 * 65536; firstPixelHue += 256)
+            {
+                led_strip.rainbow(firstPixelHue);
+                led_strip.show();
+                if (digitalRead(BUTTON_PIN) == HIGH)
+                {
+                    return;
+                }
+                delay(10);
+            }
         }
     }
 

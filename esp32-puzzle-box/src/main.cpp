@@ -44,11 +44,6 @@ extern "C"
             err = nvs_flash_init();
         }
         ESP_ERROR_CHECK(err);
-
-        int mode = nvs_read_int("sta_mode", -1);
-
-        // initialize wifi
-        //bool isStationMode = wifiStartInStationMode();
         
         // initialize lox
         ESP_LOGI("app_main", "Initializing VL53L0X...");
@@ -71,7 +66,6 @@ extern "C"
         ESP_LOGI("app_main", "Initializing MPU6050...done");
 
         // initialize button
-        pinMode(BUTTON_LED, OUTPUT);
         pinMode(BUTTON_PIN, INPUT);
 
         // initialize 7seg
@@ -81,19 +75,9 @@ extern "C"
         // LEDStrip 
         LEDStrip *led_strip = new LEDStrip();
 
-        // initialize games
-        Game1 g1 = Game1(led_strip);
-        Game2 g2 = Game2(led_strip, matrix, lox);
-        Game3 g3 = Game3(led_strip, mpu);
-
-        int i = 0;
-        // play!
-        matrix.println(i++);
-        matrix.writeDisplay();
-        // game1 is special: if input isn't detected, put into wall clock mode
-        if (!g1.run(mode == 1))
-        {
-            // start the webserver, already beat the game
+        int mode = nvs_read_int("sta_mode", -1);
+        if (mode == 1) {
+            // already beat the game, put into desktop clock mode
             wifiStartInStationMode();
             webserverStart();
 
@@ -101,6 +85,19 @@ extern "C"
             int timezone = getTimezone();
             showClock(matrix, timezone);
         }
+
+        // initialize games
+        Game1 g1 = Game1(led_strip);
+        Game2 g2 = Game2(led_strip, matrix, lox);
+        Game3 g3 = Game3(led_strip, mpu);
+
+        led_strip->rainbowWait();
+        delay(1000);
+
+        int i = 0;
+        matrix.println(i++);
+        matrix.writeDisplay();
+        g1.run();
 
         matrix.println(i++);
         matrix.writeDisplay();

@@ -2,40 +2,27 @@
 #include <esp_log.h>
 #include "utils.cpp"
 #include "led.cpp"
-
-#define BUTTON_PIN 4
-#define BUTTON_LED 2
+#include "button.cpp"
 
 class Game1
 {
 public:
-    explicit Game1(LEDStrip *led): led_strip(led) {}
+    explicit Game1(LEDStrip *led) : led_strip(led) {}
 
-    bool readButton()
-    {
-        int buttonState = digitalRead(BUTTON_PIN);
-        return buttonState == HIGH;
-    }
-
-    bool run(bool quitIfNotPlaying)
+    bool run()
     {
         for (int games = 0; games < 3; games++)
         {
-            // initialize game
             led_strip->clear();
 
             int goalLed = random(0, 20);
-
             bool playing = true;
             int failures = 0;
-            int buttonPresses = 0;
-            int frame = 0;
             while (playing)
             {
                 led_strip->setPixelColor(goalLed, led_strip->green);
                 for (int i = 0; i < led_strip->numPixels(); i++)
                 {
-                    frame++;
                     int prev = i - 1;
                     if (i == 0)
                     {
@@ -56,7 +43,6 @@ public:
                     if (readButton())
                     {
                         ESP_LOGI("game1", "i=%d goalLed=%d", i, goalLed);
-                        buttonPresses++;
                         if (i == goalLed)
                         {
                             playing = false;
@@ -71,10 +57,10 @@ public:
                             led_strip->show();
 
                             // prevent player from holding the button
-                            failures++;    
+                            failures++;
                         }
                     }
-                    // TODO - move the delay into the button and offer more checks
+                    
                     if (games == 0)
                     {
                         delay(100);
@@ -87,22 +73,16 @@ public:
                     {
                         delay(30);
                     }
-                    if (failures > 3) {
-                        playing = false;
-                        break;
-                    }
-                    if (frame > 50 && buttonPresses == 0 && quitIfNotPlaying) {
-                        // user probably isn't playing, 
+                    if (failures > 3)
+                    {
                         playing = false;
                         break;
                     }
                 }
             }
-            if (failures > 3) {
+            if (failures > 3)
+            {
                 games = -1;
-            }
-            if (frame > 50 && buttonPresses == 0 && quitIfNotPlaying) {
-                return false;
             }
         }
         return true;
