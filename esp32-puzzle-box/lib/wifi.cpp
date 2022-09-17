@@ -33,14 +33,16 @@ bool wifiStartInStationMode()
     int totalAttempts = 0;
     if (isWifiStationMode())
     {
+        ESP_LOGI("wifiStartInStationMode", "Reading ssid...");
+        String ssid = nvs_read_str("sta_ssid", "");
+        String password = nvs_read_str("sta_password", "");
         while (totalAttempts < 5)
         {
-            char *ssid = nvs_read_str("sta_ssid", "");
-            char *password = nvs_read_str("sta_password", "");
+            ESP_LOGI("wifiStartInStationMode", "ssid=%s password=%s", ssid.c_str(), password.c_str());
             int connectionAttempts = 0;
             WiFi.mode(WIFI_STA);
-            WiFi.begin(ssid, password);
-            ESP_LOGI("app_main", "Connecting to wifi with %s and %s...\n", ssid, password);
+            WiFi.begin(ssid.c_str(), password.c_str());
+            ESP_LOGI("app_main", "Connecting to wifi with %s and %s...\n", ssid.c_str(), password.c_str());
             while (WiFi.status() != WL_CONNECTED && connectionAttempts < 7)
             {
                 connectionAttempts++;
@@ -66,7 +68,7 @@ bool wifiStartInStationMode()
     if (totalAttempts == 5)
     {
         ESP_LOGI("app_main", "Failed to connext in station mode, reverting to soft AP mode");
-        WiFi.softAP("your-name-with-dashes", "nathan-evans");
+        WiFi.softAP("your-name-with-dashes", "rebecca-ysteboe");
         IPAddress IP = WiFi.softAPIP();
         ESP_LOGI("app_main", "Soft AP IP address: %s", IP.toString().c_str());
     }

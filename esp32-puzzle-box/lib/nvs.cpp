@@ -76,7 +76,7 @@ int nvs_read_int(char *key, int fallback)
     return i;
 }
 
-char *nvs_read_str(char *key, char *fallback)
+String nvs_read_str(char *key, char *fallback)
 {
     nvs_handle_t commitHandler;
     esp_err_t err = nvs_open("storage", NVS_READWRITE, &commitHandler);
@@ -87,7 +87,9 @@ char *nvs_read_str(char *key, char *fallback)
     }
     size_t size = 60;
     char s[60];
+    ESP_LOGI("nvs_read_str", "Reading str...");
     err = nvs_get_str(commitHandler, key, s, &size);
+    ESP_LOGI("nvs_read_str", "Reading str...done");
     if (err == ESP_ERR_NVS_NOT_FOUND)
     {
         ESP_LOGI("nvs_read_str", "Not found (%s) reading %s, returning fallback %s", esp_err_to_name(err), key, fallback);
@@ -98,7 +100,8 @@ char *nvs_read_str(char *key, char *fallback)
         ESP_LOGI("nvs_read_str", "Error (%s) reading %s, returning fallback %s", esp_err_to_name(err), key, fallback);
         return fallback;
     }
-    return s;
+    ESP_LOGI("nvs_read_str", "Reading str...3: %s", s);
+    return String(s);
 }
 
 void nvs_delete(char *key)
