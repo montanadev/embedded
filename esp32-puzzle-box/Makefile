@@ -1,4 +1,4 @@
-.PHONY: build upload monitor test clean menuconfig check 
+.PHONY: build upload monitor test clean menuconfig check erase
 
 build:
 	pio run -e nodemcu-32s
