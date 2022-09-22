@@ -1,5 +1,7 @@
 # WARNING - don't look at code / commits unless you've solved!
 
+Writeup of some of the games w/ pictures, BoM at https://de1ux.com/posts/building-a-puzzle-box/
+
 # esp32-puzzle-box
 
 This is a puzzle box to commemorate the '22 Q3 off-site. It has 4 puzzles to solve; the first three puzzles are easy, the fourth one is more involved. None of the solutions require opening the box or applying force.
