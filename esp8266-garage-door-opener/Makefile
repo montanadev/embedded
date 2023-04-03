@@ -1,0 +1,25 @@
+.PHONY: build upload monitor test clean menuconfig check erase
+
+build:
+	pio run -e nodemcu=8266
+
+upload:
+	pio run -e nodemcu=8266 -t upload
+
+monitor:
+	pio device monitor
+
+test:
+	pio test -e native -vvv
+
+clean:
+	pio run --target clean
+
+menuconfig:
+	pio run -t menuconfig
+
+check:
+	pio check --skip-packages --fail-on-defect low
+
+erase: 
+	pio run --target erase -e nodemcu=8266
