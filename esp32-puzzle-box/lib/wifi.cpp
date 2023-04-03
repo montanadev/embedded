@@ -68,7 +68,7 @@ bool wifiStartInStationMode()
     if (totalAttempts == 5)
     {
         ESP_LOGI("app_main", "Failed to connext in station mode, reverting to soft AP mode");
-        WiFi.softAP("your-name-with-dashes", "rebecca-ysteboe");
+        WiFi.softAP("your-name-with-dashes", "nathan-evans");
         IPAddress IP = WiFi.softAPIP();
         ESP_LOGI("app_main", "Soft AP IP address: %s", IP.toString().c_str());
     }
