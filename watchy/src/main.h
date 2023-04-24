@@ -2,11 +2,7 @@
 #define MAIN_H
 
 #include <Watchy.h>
-#include "brutus_vis.h"
-#include "bahn_vis.h"
-#include "maze_vis.h"
 #include "redub_vis.h"
-#include "novel_vis.h"
 
 RTC_DATA_ATTR bool light = true;
 RTC_DATA_ATTR int face = 0;
@@ -17,20 +13,11 @@ class WatchyBrain : public Watchy {
   public:
     void drawWatchFace();
     void drawWrapText(String text);
-    void drawBrutus(bool light, float batt);
-    void drawBahn(bool light, float batt);
-    void drawMaze(bool light, float batt);
     void drawRedub(bool light, float batt);
-    void drawAustenFace(bool light, float batt);
-    void drawPoeFace(bool light, float batt);
     virtual void handleButtonPress();//Must be virtual in Watchy.h too
 };
 
-#include "brutus.h"
-#include "bahn.h"
-#include "maze.h"
 #include "redub.h"
-#include "novel.h"
 
 void WatchyBrain::handleButtonPress() {
   if (guiState == WATCHFACE_STATE) {
