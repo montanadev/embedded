@@ -1,10 +1,11 @@
 #include <Wire.h>
 #include <Adafruit_SSD1306.h>
-#include "time.h"
 #include <esp_log.h>
 #include "nvs_flash.h"
 #include "nvs.h"
 #include <Arduino.h>
+#include "../lib/clock.cpp"
+#include "../lib/settings.cpp"
 
 static const uint8_t datadog[] = {0x00, 0x00, 0x00, 0x00, 0x03, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0xf0,
                                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0f, 0xf8, 0x00, 0x00, 0x00, 0xf8, 0x00, 0x40,
@@ -43,69 +44,70 @@ static const uint8_t datadog[] = {0x00, 0x00, 0x00, 0x00, 0x03, 0xc0, 0x00, 0x00
                                   0x00, 0x00, 0x00, 0x00, 0x00, 0x7f, 0xfc, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3f,
                                   0xf8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1f, 0xf8, 0x00, 0x00, 0x00, 0x00, 0x00,
                                   0x00, 0x07, 0xe0, 0x00, 0x00, 0x00, 0x00, 0x00};
-static const uint8_t minidatadog[] = {0x00, 0x03, 0x00, 0x18, 0x46, 0x80, 0x7d, 0xff, 0xc0, 0x7f, 0xff, 0x60, 0xfb,
-                                      0xff, 0x00, 0xfb, 0xfe, 0x80, 0x7b, 0x9e, 0x00, 0x07, 0x9f, 0x80, 0x1f, 0xff,
-                                      0xc0, 0x1f, 0xff, 0x60, 0x1f, 0xfe, 0x60, 0x0f, 0xff, 0xe0, 0x07, 0xff, 0xce,
-                                      0x03, 0xe1, 0xfe, 0x03, 0xbf, 0xfc, 0x07, 0xbf, 0xf9, 0x0f, 0xbf, 0x89, 0x1b,
-                                      0xff, 0x81, 0x3e, 0xf8, 0x01, 0x7f, 0x70, 0x01, 0x7f, 0x10, 0x3e, 0x1f, 0x1f,
-                                      0x80, 0x1f, 0x00, 0x00, 0x0f, 0x00, 0x00};
 
 
 const char *ntpServer = "pool.ntp.org";
 
-bool tripped = true;
 int option = 0;
 
+struct State {
+    String page;
+    int selection;
+    int interruptClock;
+    unsigned long startPress;
+};
+
+State s = {"home", 0, 0, millis()};
 
 // BUTTON_PIN is the pin on the Datadog paw
-#define BUTTON_PIN     26
+#define BUTTON_PIN       26
 // SCREEN_ADDRESS is normally 0x3D for 128x64, but for these crazy Amazon OLEDs, its 0x3C
-#define SCREEN_ADDRESS 0x3C
+#define SCREEN_ADDRESS   0x3C
+// SETTINGS_OPTIONS
+#define SETTINGS_OPTIONS 2
 
 Adafruit_SSD1306 display(128, 64, &Wire, -1);
 
-void showClock() {
+
+void IRAM_ATTR button_interrupt() {
+    ets_printf("Interrupted\n");
+//    if (digitalRead(BUTTON_PIN) == HIGH) {
+//        s.startPress = millis();
+//        return;
+//    }
+//
+//    bool longPress = false;
+//    if (millis() - s.startPress > 1000) {
+//        longPress = true;
+//    }
+    bool longPress = true;
+
+    // can't use ESP_LOGI in an interrupt
+    ets_printf("Interrupted with longpress %v\n", longPress);
+    if (s.page == "home") {
+        ets_printf("home => settings\n");
+        s.page = "settings";
+        s.selection = 0;
+    }
+    if (s.page == "settings") {
+        ets_printf("settings => incrementing selection\n");
+        s.selection = (s.selection + 1) % SETTINGS_OPTIONS;
+    }
+    s.interruptClock++;
+}
+
+void main_render_loop(void *pvParameter) {
     while (1) {
-        display.clearDisplay();
-        display.setTextColor(WHITE);
-        display.setTextSize(3);
-        display.setFont(NULL);
-        display.setCursor(0, 0);
-
-        struct tm timeinfo;
-        time_t now;
-        time(&now);
-        setenv("TZ", "UTC-7", 1);
-        tzset();
-
-        localtime_r(&now, &timeinfo);
-
-        if (timeinfo.tm_hour > 12) {
-            timeinfo.tm_hour -= 12;
+        ESP_LOGI("main_render_loop", "Running main render loop...");
+        if (s.page == "home") {
+            showClock(display, s.interruptClock);
         }
-
-        String hour = "%d";
-        if (timeinfo.tm_hour < 10) {
-            hour = "0%d";
+        if (s.page == "settings") {
+            showSettings(display, s.interruptClock, s.selection);
         }
-        String min = "%d";
-        if (timeinfo.tm_min < 10) {
-            min = "0%d";
-        }
-
-        char code_without_blink[40];
-        sprintf(code_without_blink, "%s:%s", hour.c_str(), min.c_str());
-        char code_with_blink[40];
-        sprintf(code_with_blink, "%s %s", hour.c_str(), min.c_str());
-
-        display.printf(code_with_blink, timeinfo.tm_hour, timeinfo.tm_min);
-        display.display();
-        sleep(1);
-        display.setCursor(0, 0);
-        display.clearDisplay();
-        display.printf(code_without_blink, timeinfo.tm_hour, timeinfo.tm_min);
-        display.display();
-        sleep(1);
+        s.interruptClock++;
+        //vTaskDelay(100); // (1000 /  / portTICK_PERIOD_MS)
+        ESP_LOGI("main_render_loop", "Running main render loop...done");
     }
 }
 
@@ -131,7 +133,7 @@ extern "C" void app_main() {
     ESP_LOGI("app_main", "Initializing screen...done");
 
     // initialize the push pin
-    pinMode(BUTTON_PIN, INPUT);
+    //pinMode(BUTTON_PIN, INPUT);
 
     // draw the loading image
     display.clearDisplay();
@@ -140,59 +142,10 @@ extern "C" void app_main() {
     display.display();
     sleep(2);
 
-    showClock();
+    attachInterrupt(BUTTON_PIN, button_interrupt, CHANGE);
+
+    xTaskCreate(&main_render_loop, "main_render", 10000, NULL, 0, NULL);
 }
 
 
-void showSettings() {
-    if (tripped) {
-        display.clearDisplay();
-        display.setTextColor(WHITE);
-        display.drawBitmap(104, 0, minidatadog, 24, 24, 1);
-        display.setTextSize(2);
-        display.setFont(NULL);
-        display.setCursor(0, 0);
-        display.println("Settings");
-        display.drawLine(0, 15, 104, 15, 1);
-        display.setTextSize(1);
-
-        display.setCursor(0, 17);
-        if (option == 0) {
-            display.setTextColor(BLACK, WHITE);
-        } else {
-            display.setTextColor(WHITE);
-        }
-        display.println("Set clock");
-
-        display.setCursor(0, 27);
-        if (option == 1) {
-            display.setTextColor(BLACK, WHITE);
-        } else {
-            display.setTextColor(WHITE);
-        }
-        display.println("Enable WiFi");
-        display.display();
-    }
-
-    // read the state of the pushbutton value:
-    int buttonState = digitalRead(BUTTON_PIN);
-
-    // check if the pushbutton is pressed. If it is, the buttonState is HIGH:
-    if (buttonState == HIGH && !tripped) {
-        tripped = true;
-
-        Serial.printf("%d %d\n", tripped, option);
-        sleep(1);
-        if (digitalRead(BUTTON_PIN) == HIGH) {
-            // longpress
-            Serial.print("Longpress detected \n");
-        } else {
-            option = (option + 1) % 2;
-        }
-    } else if (buttonState == LOW) {
-        if (tripped) {
-            tripped = false;
-        }
-    }
-}
 
