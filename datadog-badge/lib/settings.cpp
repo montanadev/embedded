@@ -8,33 +8,33 @@ static const uint8_t minidatadog[] = {0x00, 0x03, 0x00, 0x18, 0x46, 0x80, 0x7d, 
                                       0x80, 0x1f, 0x00, 0x00, 0x0f, 0x00, 0x00};
 
 
-void showSettings(Adafruit_SSD1306 display, int ic, int selection) {
-    display.clearDisplay();
-    display.setTextColor(WHITE);
-    display.drawBitmap(104, 0, minidatadog, 24, 24, 1);
-    display.setTextSize(2);
-    display.setFont(NULL);
-    display.setCursor(0, 0);
-    display.println("Settings");
-    display.drawLine(0, 15, 104, 15, 1);
-    display.setTextSize(1);
+void showSettings(Adafruit_SSD1306 *display, int ic, int selection) {
+    display->clearDisplay();
+    display->setTextColor(WHITE);
+    display->drawBitmap(104, 0, minidatadog, 24, 24, 1);
+    display->setTextSize(2);
+    display->setFont(NULL);
+    display->setCursor(0, 0);
+    display->println("Settings");
+    display->drawLine(0, 15, 104, 15, 1);
+    display->setTextSize(1);
 
-    display.setCursor(0, 17);
+    display->setCursor(0, 17);
     if (selection == 0) {
-        display.setTextColor(BLACK, WHITE);
+        display->setTextColor(BLACK, WHITE);
     } else {
-        display.setTextColor(WHITE);
+        display->setTextColor(WHITE);
     }
-    display.println("Set clock");
+    display->println("Set clock");
 
-    display.setCursor(0, 27);
+    display->setCursor(0, 27);
     if (selection == 1) {
-        display.setTextColor(BLACK, WHITE);
+        display->setTextColor(BLACK, WHITE);
     } else {
-        display.setTextColor(WHITE);
+        display->setTextColor(WHITE);
     }
-    display.println("Enable WiFi");
-    display.display();
+    display->println("Enable WiFi");
+    display->display();
     vTaskDelay(10 / portTICK_PERIOD_MS);
 }
 

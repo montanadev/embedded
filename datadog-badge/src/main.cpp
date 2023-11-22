@@ -55,59 +55,141 @@ struct State {
     int selection;
     int interruptClock;
     unsigned long startPress;
+    int hour_override;
+    int min_override;
+    int hour_diff;
+    int min_diff;
+    bool awaitingLow;
 };
 
-State s = {"home", 0, 0, millis()};
+tm getTime() {
+    struct tm timeinfo;
+    time_t now;
+    time(&now);
+    localtime_r(&now, &timeinfo);
+    return timeinfo;
+}
+
+State s = {"clock", 0, 0, millis(), -1, -1, -1, -1, false};
 
 // BUTTON_PIN is the pin on the Datadog paw
-#define BUTTON_PIN       26
+#define BUTTON_PIN                    26
 // SCREEN_ADDRESS is normally 0x3D for 128x64, but for these crazy Amazon OLEDs, its 0x3C
-#define SCREEN_ADDRESS   0x3C
+#define SCREEN_ADDRESS                0x3C
 // SETTINGS_OPTIONS
-#define SETTINGS_OPTIONS 2
+#define SETTINGS_OPTIONS              2
+// BUTTON_LONGPRESS_THRESHOLD_MS
+#define BUTTON_LONGPRESS_THRESHOLD_MS 250
 
 Adafruit_SSD1306 display(128, 64, &Wire, -1);
 
 
 void IRAM_ATTR button_interrupt() {
-    ets_printf("Interrupted\n");
-//    if (digitalRead(BUTTON_PIN) == HIGH) {
-//        s.startPress = millis();
-//        return;
-//    }
-//
-//    bool longPress = false;
-//    if (millis() - s.startPress > 1000) {
-//        longPress = true;
-//    }
-    bool longPress = true;
+    if (digitalRead(BUTTON_PIN) == HIGH) {
+        s.startPress = millis();
+        s.awaitingLow = true;
+        return;
+    }
+    if (digitalRead(BUTTON_PIN) == LOW && !s.awaitingLow) {
+        return;
+    }
+    s.awaitingLow = false;
+
+    bool longPress = false;
+    long duration = millis() - s.startPress;
+
+    // DEBUGGING
+    char stuff[20];
+    sprintf(stuff, "%ld", duration);
+    ets_printf(stuff);
+    ets_printf("\n");
+    // DEBUGGING
+
+    if (duration > BUTTON_LONGPRESS_THRESHOLD_MS) {
+        longPress = true;
+    }
 
     // can't use ESP_LOGI in an interrupt
-    ets_printf("Interrupted with longpress %v\n", longPress);
-    if (s.page == "home") {
-        ets_printf("home => settings\n");
-        s.page = "settings";
-        s.selection = 0;
+    if (longPress) {
+        ets_printf("Interrupted with longpress\n");
     }
-    if (s.page == "settings") {
-        ets_printf("settings => incrementing selection\n");
-        s.selection = (s.selection + 1) % SETTINGS_OPTIONS;
+    else {
+        ets_printf("Interrupted\n");
     }
+
+    if (longPress) {
+        if (s.page == "settings") {
+            // set clock
+            if (s.selection == 0) {
+                ets_printf("settings => set_clock\n");
+                s.page = "set_clock";
+                ets_printf("settings => set_clocka\n");
+                tm t = getTime();
+                ets_printf("settings => set_clockb\n");
+
+                s.hour_override = t.tm_hour;
+                s.min_override = t.tm_min;
+                s.selection = 0;
+                ets_printf("settings => set_clock...done\n");
+
+            }
+        } else if (s.page == "set_clock") {
+            ets_printf("set_clock => next digit\n");
+            s.selection++;
+            if (s.selection >= 2) {
+                ets_printf("set_clock => clock\n");
+                s.selection = 0;
+                s.page = "clock";
+            }
+        }
+    } else {
+        // shortpress
+        if (s.page == "clock") {
+            ets_printf("clock => settings\n");
+            s.page = "settings";
+            s.selection = 0;
+        }
+        if (s.page == "settings") {
+            ets_printf("settings => incrementing selection\n");
+            s.selection = (s.selection + 1) % SETTINGS_OPTIONS;
+        }
+        if (s.page == "set_clock") {
+            switch (s.selection) {
+                case 0:
+                    // hour digit
+                    s.hour_override++;
+                    if (s.hour_override > 12) {
+                        s.hour_override = 1;
+                    }
+                    break;
+                default:
+                    // min digit
+                    s.min_override++;
+                    if (s.min_override > 59) {
+                        s.min_override= 0;
+                    }
+            }
+        }
+    }
+
     s.interruptClock++;
 }
 
 void main_render_loop(void *pvParameter) {
     while (1) {
-        ESP_LOGI("main_render_loop", "Running main render loop...");
-        if (s.page == "home") {
-            showClock(display, s.interruptClock);
+        //ESP_LOGI("main_render_loop", "(%d) Running main render loop...", s.interruptClock);
+        if (s.page == "clock") {
+            showClock(&display, s.interruptClock);
         }
         if (s.page == "settings") {
-            showSettings(display, s.interruptClock, s.selection);
+            showSettings(&display, s.interruptClock, s.selection);
+        }
+        if (s.page == "set_clock") {
+            setClock(&display, s.interruptClock, s.selection, s.hour_override, s.min_override);
         }
         s.interruptClock++;
         //vTaskDelay(100); // (1000 /  / portTICK_PERIOD_MS)
-        ESP_LOGI("main_render_loop", "Running main render loop...done");
+        //ESP_LOGI("main_render_loop", "Running main render loop...done");
     }
 }
 
