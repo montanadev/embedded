@@ -4,6 +4,7 @@
 #include "nvs_flash.h"
 #include "nvs.h"
 #include <Arduino.h>
+#include <TimeLib.h>
 #include "../lib/clock.cpp"
 #include "../lib/settings.cpp"
 
@@ -57,32 +58,22 @@ struct State {
     unsigned long startPress;
     int hour_override;
     int min_override;
-    int hour_diff;
-    int min_diff;
     bool awaitingLow;
 };
 
-tm getTime() {
-    struct tm timeinfo;
-    time_t now;
-    time(&now);
-    localtime_r(&now, &timeinfo);
-    return timeinfo;
-}
-
-State s = {"clock", 0, 0, millis(), -1, -1, -1, -1, false};
+State s = {"clock", 0, 0, millis(), -1, -1, false};
 
 // BUTTON_PIN is the pin on the Datadog paw
 #define BUTTON_PIN                    26
 // SCREEN_ADDRESS is normally 0x3D for 128x64, but for these crazy Amazon OLEDs, its 0x3C
 #define SCREEN_ADDRESS                0x3C
 // SETTINGS_OPTIONS
-#define SETTINGS_OPTIONS              2
+#define SETTINGS_OPTIONS              4
 // BUTTON_LONGPRESS_THRESHOLD_MS
 #define BUTTON_LONGPRESS_THRESHOLD_MS 250
 
 Adafruit_SSD1306 display(128, 64, &Wire, -1);
-
+long settings_delay;
 
 void IRAM_ATTR button_interrupt() {
     if (digitalRead(BUTTON_PIN) == HIGH) {
@@ -91,6 +82,7 @@ void IRAM_ATTR button_interrupt() {
         return;
     }
     if (digitalRead(BUTTON_PIN) == LOW && !s.awaitingLow) {
+        // this might not be helpful
         return;
     }
     s.awaitingLow = false;
@@ -112,8 +104,7 @@ void IRAM_ATTR button_interrupt() {
     // can't use ESP_LOGI in an interrupt
     if (longPress) {
         ets_printf("Interrupted with longpress\n");
-    }
-    else {
+    } else {
         ets_printf("Interrupted\n");
     }
 
@@ -123,37 +114,35 @@ void IRAM_ATTR button_interrupt() {
             if (s.selection == 0) {
                 ets_printf("settings => set_clock\n");
                 s.page = "set_clock";
-                ets_printf("settings => set_clocka\n");
-                tm t = getTime();
-                ets_printf("settings => set_clockb\n");
-
-                s.hour_override = t.tm_hour;
-                s.min_override = t.tm_min;
+                s.hour_override = hour();
+                s.min_override = minute();
                 s.selection = 0;
-                ets_printf("settings => set_clock...done\n");
-
+            }
+            if (s.selection == 3) {
+                s.page = "clock";
+                s.selection = 0;
             }
         } else if (s.page == "set_clock") {
             ets_printf("set_clock => next digit\n");
             s.selection++;
             if (s.selection >= 2) {
                 ets_printf("set_clock => clock\n");
-                s.selection = 0;
                 s.page = "clock";
+                s.selection = 0;
+                setTime(s.hour_override, s.min_override, 0, 1, 1, 2023);
             }
         }
-    } else {
-        // shortpress
+    } else { // shortpress
         if (s.page == "clock") {
             ets_printf("clock => settings\n");
             s.page = "settings";
             s.selection = 0;
-        }
-        if (s.page == "settings") {
+            settings_delay = millis();
+        } else if (s.page == "settings") {
             ets_printf("settings => incrementing selection\n");
             s.selection = (s.selection + 1) % SETTINGS_OPTIONS;
-        }
-        if (s.page == "set_clock") {
+            settings_delay = millis();
+        } else if (s.page == "set_clock") {
             switch (s.selection) {
                 case 0:
                     // hour digit
@@ -166,7 +155,7 @@ void IRAM_ATTR button_interrupt() {
                     // min digit
                     s.min_override++;
                     if (s.min_override > 59) {
-                        s.min_override= 0;
+                        s.min_override = 0;
                     }
             }
         }
@@ -179,10 +168,14 @@ void main_render_loop(void *pvParameter) {
     while (1) {
         //ESP_LOGI("main_render_loop", "(%d) Running main render loop...", s.interruptClock);
         if (s.page == "clock") {
-            showClock(&display, s.interruptClock);
+            showClock(&display, s.interruptClock, hour(), minute());
         }
         if (s.page == "settings") {
-            showSettings(&display, s.interruptClock, s.selection);
+            if (millis() - settings_delay > 5000) {
+                s.page = "clock";
+            } else {
+                showSettings(&display, s.interruptClock, s.selection);
+            }
         }
         if (s.page == "set_clock") {
             setClock(&display, s.interruptClock, s.selection, s.hour_override, s.min_override);

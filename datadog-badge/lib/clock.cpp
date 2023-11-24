@@ -1,92 +1,57 @@
-#include "time.h"
 #include <Adafruit_SSD1306.h>
 
-void setClock(Adafruit_SSD1306 *display, int ic, int selection, int hour_override, int min_override) {
+void displayTime(Adafruit_SSD1306 *display, int ic, int hour, int min) {
     display->clearDisplay();
     display->setTextColor(WHITE);
     display->setTextSize(4);
     display->setFont(NULL);
-    display->setCursor(5, 10);
+    display->setCursor(5, 15);
 
-    struct tm timeinfo;
-    time_t now;
-    time(&now);
-    setenv("TZ", "UTC-7", 1);
-    tzset();
-
-    localtime_r(&now, &timeinfo);
-
-    String hour = "%d";
-    if (hour_override < 10) {
-        hour = "0%d";
+    if (hour > 12) {
+        hour = 1;
     }
-    String min = "%d";
-    if (min_override < 10) {
-        min = "0%d";
+    if (hour == 0) {
+        hour = 12;
+    }
+
+    String hour_fmt = "%d";
+    if (hour < 10) {
+        hour_fmt = "0%d";
+    }
+    String min_fmt = "%d";
+    if (min < 10) {
+        min_fmt = "0%d";
     }
 
     char code_without_blink[40];
-    sprintf(code_without_blink, "%s:%s", hour.c_str(), min.c_str());
+    sprintf(code_without_blink, "%s:%s", hour_fmt.c_str(), min_fmt.c_str());
     char code_with_blink[40];
-    sprintf(code_with_blink, "%s %s", hour.c_str(), min.c_str());
+    sprintf(code_with_blink, "%s %s", hour_fmt.c_str(), min_fmt.c_str());
 
-    if (ic % 30 == 0) {
-        display->printf(code_with_blink, hour_override, min_override);
+    // it just... feels right
+    if (ic % 40 < 20) {
+        display->printf(code_with_blink, hour, min);
     } else {
-        display->printf(code_without_blink, hour_override, min_override);
+        display->printf(code_without_blink, hour, min);
     }
+}
 
-    switch (selection) {
-        case 0:
-            display->drawLine(5, 50, 25, 50, 1);
-            break;
-        default:
-            display->drawLine(105, 50, 120, 50, 1);
+void setClock(Adafruit_SSD1306 *display, int ic, int selection, int hour, int min) {
+    displayTime(display, ic, hour, min);
+
+    if (selection == 0) {
+        display->drawLine(5, 50, 25, 50, 1);
+    } else {
+        display->drawLine(105, 50, 120, 50, 1);
     }
 
     display->display();
     vTaskDelay(10 / portTICK_PERIOD_MS);
 }
 
-void showClock(Adafruit_SSD1306 *display, int ic) {
-    display->clearDisplay();
-    display->setTextColor(WHITE);
-    display->setTextSize(4);
-    display->setFont(NULL);
-    display->setCursor(5, 10);
-
-    struct tm timeinfo;
-    time_t now;
-    time(&now);
-    setenv("TZ", "UTC-7", 1);
-    tzset();
-
-    localtime_r(&now, &timeinfo);
-
-    if (timeinfo.tm_hour > 12) {
-        timeinfo.tm_hour -= 12;
-    }
-
-    String hour = "%d";
-    if (timeinfo.tm_hour < 10) {
-        hour = "0%d";
-    }
-    String min = "%d";
-    if (timeinfo.tm_min < 10) {
-        min = "0%d";
-    }
-
-    char code_without_blink[40];
-    sprintf(code_without_blink, "%s:%s", hour.c_str(), min.c_str());
-    char code_with_blink[40];
-    sprintf(code_with_blink, "%s %s", hour.c_str(), min.c_str());
-
-    if (ic % 2 == 0) {
-        display->printf(code_with_blink, timeinfo.tm_hour, timeinfo.tm_min);
-    } else {
-        display->printf(code_without_blink, timeinfo.tm_hour, timeinfo.tm_min);
-    }
+void showClock(Adafruit_SSD1306 *display, int ic, int hour, int min) {
+    displayTime(display, ic, hour, min);
 
     display->display();
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    vTaskDelay(10 / portTICK_PERIOD_MS);
 }

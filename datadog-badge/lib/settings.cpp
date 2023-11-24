@@ -34,6 +34,23 @@ void showSettings(Adafruit_SSD1306 *display, int ic, int selection) {
         display->setTextColor(WHITE);
     }
     display->println("Enable WiFi");
+
+    display->setCursor(0, 37);
+    if (selection == 2) {
+        display->setTextColor(BLACK, WHITE);
+    } else {
+        display->setTextColor(WHITE);
+    }
+    display->println("Reset");
+
+    display->setCursor(0, 47);
+    if (selection == 3) {
+        display->setTextColor(BLACK, WHITE);
+    } else {
+        display->setTextColor(WHITE);
+    }
+    display->println("Exit");
+
     display->display();
     vTaskDelay(10 / portTICK_PERIOD_MS);
 }
