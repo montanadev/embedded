@@ -1,4 +1,9 @@
 #include <Adafruit_SSD1306.h>
+#include "nvs.cpp"
+#include "wifi.cpp"
+
+// ntp settings
+const char *ntpServer = "pool.ntp.org";
 
 void displayTime(Adafruit_SSD1306 *display, int ic, int hour, int min) {
     display->clearDisplay();
@@ -8,7 +13,7 @@ void displayTime(Adafruit_SSD1306 *display, int ic, int hour, int min) {
     display->setCursor(5, 15);
 
     if (hour > 12) {
-        hour = 1;
+        hour -= 12;
     }
     if (hour == 0) {
         hour = 12;
@@ -49,8 +54,29 @@ void setClock(Adafruit_SSD1306 *display, int ic, int selection, int hour, int mi
     vTaskDelay(10 / portTICK_PERIOD_MS);
 }
 
-void showClock(Adafruit_SSD1306 *display, int ic, int hour, int min) {
-    displayTime(display, ic, hour, min);
+void showClock(Adafruit_SSD1306 *display, int ic) {
+//    if (isWifiStationMode()) {
+//        // if there's wifi creds, use ntp to set time
+//
+//        struct tm t{};
+//        if (!getLocalTime(&t)) {
+//            ESP_LOGI("showClock", "failed to get local time");
+//            displayTime(display, ic, hour(), minute());
+//        } else {
+//            ESP_LOGI("showClock", "setting time via ntp: hour %d min %d", t.tm_hour, t.tm_min);
+//            displayTime(display, ic, t.tm_hour, t.tm_min);
+//        }
+//    } else {
+//
+//    }
+    if (isWifiStationMode()) {
+        timeval currentTime{};
+        gettimeofday (&currentTime, NULL);
+        tm* local_tm = localtime (&currentTime.tv_sec);
+        displayTime(display, ic, local_tm->tm_hour, local_tm->tm_min);
+    } else {
+        displayTime(display, ic, hour(), minute());
+    }
 
     display->display();
     vTaskDelay(10 / portTICK_PERIOD_MS);

@@ -7,6 +7,19 @@
 #include <TimeLib.h>
 #include "../lib/clock.cpp"
 #include "../lib/settings.cpp"
+#include "../lib/wifi.cpp"
+#include <WiFi.h>
+#include <ESPNtpClient.h>
+
+
+// BUTTON_PIN is the pin on the Datadog paw
+#define BUTTON_PIN                    26
+// SCREEN_ADDRESS is normally 0x3D for 128x64, but for these crazy Amazon OLEDs, its 0x3C
+#define SCREEN_ADDRESS                0x3C
+// SETTINGS_OPTIONS
+#define SETTINGS_OPTIONS              4
+// BUTTON_LONGPRESS_THRESHOLD_MS
+#define BUTTON_LONGPRESS_THRESHOLD_MS 250
 
 static const uint8_t datadog[] = {0x00, 0x00, 0x00, 0x00, 0x03, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0xf0,
                                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0f, 0xf8, 0x00, 0x00, 0x00, 0xf8, 0x00, 0x40,
@@ -47,10 +60,6 @@ static const uint8_t datadog[] = {0x00, 0x00, 0x00, 0x00, 0x03, 0xc0, 0x00, 0x00
                                   0x00, 0x07, 0xe0, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 
-const char *ntpServer = "pool.ntp.org";
-
-int option = 0;
-
 struct State {
     String page;
     int selection;
@@ -63,16 +72,9 @@ struct State {
 
 State s = {"clock", 0, 0, millis(), -1, -1, false};
 
-// BUTTON_PIN is the pin on the Datadog paw
-#define BUTTON_PIN                    26
-// SCREEN_ADDRESS is normally 0x3D for 128x64, but for these crazy Amazon OLEDs, its 0x3C
-#define SCREEN_ADDRESS                0x3C
-// SETTINGS_OPTIONS
-#define SETTINGS_OPTIONS              4
-// BUTTON_LONGPRESS_THRESHOLD_MS
-#define BUTTON_LONGPRESS_THRESHOLD_MS 250
-
 Adafruit_SSD1306 display(128, 64, &Wire, -1);
+ApCredentials *credentials;
+
 long settings_delay;
 
 void IRAM_ATTR button_interrupt() {
@@ -81,11 +83,6 @@ void IRAM_ATTR button_interrupt() {
         s.awaitingLow = true;
         return;
     }
-    if (digitalRead(BUTTON_PIN) == LOW && !s.awaitingLow) {
-        // this might not be helpful
-        return;
-    }
-    s.awaitingLow = false;
 
     bool longPress = false;
     long duration = millis() - s.startPress;
@@ -110,15 +107,23 @@ void IRAM_ATTR button_interrupt() {
 
     if (longPress) {
         if (s.page == "settings") {
-            // set clock
-            if (s.selection == 0) {
+            if (s.selection == 0) { // set clock
                 ets_printf("settings => set_clock\n");
                 s.page = "set_clock";
                 s.hour_override = hour();
                 s.min_override = minute();
                 s.selection = 0;
-            }
-            if (s.selection == 3) {
+            } else if (s.selection == 1) { // enable wifi
+                ets_printf("settings => wifi\n");
+                credentials = getSsidAndPassword();
+                s.page = "wifi";
+                s.selection = 0;
+            } else if (s.selection == 2) { // reset
+                ets_printf("settings => reset\n");
+                nvs_flash_erase();
+                delay(5000);
+                esp_restart();
+            } else if (s.selection == 3) { // back
                 s.page = "clock";
                 s.selection = 0;
             }
@@ -168,7 +173,7 @@ void main_render_loop(void *pvParameter) {
     while (1) {
         //ESP_LOGI("main_render_loop", "(%d) Running main render loop...", s.interruptClock);
         if (s.page == "clock") {
-            showClock(&display, s.interruptClock, hour(), minute());
+            showClock(&display, s.interruptClock);
         }
         if (s.page == "settings") {
             if (millis() - settings_delay > 5000) {
@@ -180,8 +185,10 @@ void main_render_loop(void *pvParameter) {
         if (s.page == "set_clock") {
             setClock(&display, s.interruptClock, s.selection, s.hour_override, s.min_override);
         }
+        if (s.page == "wifi") {
+            showWifi(&display, credentials);
+        }
         s.interruptClock++;
-        //vTaskDelay(100); // (1000 /  / portTICK_PERIOD_MS)
         //ESP_LOGI("main_render_loop", "Running main render loop...done");
     }
 }
@@ -213,9 +220,19 @@ extern "C" void app_main() {
     // draw the loading image
     display.clearDisplay();
     display.setTextColor(WHITE);
-    display.drawBitmap(0, 0, datadog, 64, 64, 1);
+    display.drawBitmap(30, 0, datadog, 64, 64, 1);
     display.display();
     sleep(2);
+
+    // if there's wifi creds, use them
+    wifiStartInStationMode();
+    if (isWifiStationMode()) {
+        ESP_LOGI("app_main", "Starting NTP client");
+        int timezone = get_timezone();
+        configTime(3600 * timezone, 0, ntpServer);
+        NTP.setInterval (300);
+        NTP.begin();
+    }
 
     attachInterrupt(BUTTON_PIN, button_interrupt, CHANGE);
 
