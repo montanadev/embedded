@@ -54,22 +54,8 @@ void setClock(Adafruit_SSD1306 *display, int ic, int selection, int hour, int mi
     vTaskDelay(10 / portTICK_PERIOD_MS);
 }
 
-void showClock(Adafruit_SSD1306 *display, int ic) {
-//    if (isWifiStationMode()) {
-//        // if there's wifi creds, use ntp to set time
-//
-//        struct tm t{};
-//        if (!getLocalTime(&t)) {
-//            ESP_LOGI("showClock", "failed to get local time");
-//            displayTime(display, ic, hour(), minute());
-//        } else {
-//            ESP_LOGI("showClock", "setting time via ntp: hour %d min %d", t.tm_hour, t.tm_min);
-//            displayTime(display, ic, t.tm_hour, t.tm_min);
-//        }
-//    } else {
-//
-//    }
-    if (isWifiStationMode()) {
+void showClock(Adafruit_SSD1306 *display, int ic, bool wifiEnabled) {
+    if (wifiEnabled) {
         timeval currentTime{};
         gettimeofday (&currentTime, NULL);
         tm* local_tm = localtime (&currentTime.tv_sec);

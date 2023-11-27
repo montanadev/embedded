@@ -11,7 +11,6 @@
 #include <WiFi.h>
 #include <ESPNtpClient.h>
 
-
 // BUTTON_PIN is the pin on the Datadog paw
 #define BUTTON_PIN                    26
 // SCREEN_ADDRESS is normally 0x3D for 128x64, but for these crazy Amazon OLEDs, its 0x3C
@@ -67,20 +66,19 @@ struct State {
     unsigned long startPress;
     int hour_override;
     int min_override;
-    bool awaitingLow;
 };
 
-State s = {"clock", 0, 0, millis(), -1, -1, false};
+State s = {"clock", 0, 0, millis(), -1, -1};
 
 Adafruit_SSD1306 display(128, 64, &Wire, -1);
 ApCredentials *credentials;
 
 long settings_delay;
+bool wifiEnabled = false;
 
 void IRAM_ATTR button_interrupt() {
     if (digitalRead(BUTTON_PIN) == HIGH) {
         s.startPress = millis();
-        s.awaitingLow = true;
         return;
     }
 
@@ -173,7 +171,7 @@ void main_render_loop(void *pvParameter) {
     while (1) {
         //ESP_LOGI("main_render_loop", "(%d) Running main render loop...", s.interruptClock);
         if (s.page == "clock") {
-            showClock(&display, s.interruptClock);
+            showClock(&display, s.interruptClock, wifiEnabled);
         }
         if (s.page == "settings") {
             if (millis() - settings_delay > 5000) {
@@ -214,15 +212,12 @@ extern "C" void app_main() {
     }
     ESP_LOGI("app_main", "Initializing screen...done");
 
-    // initialize the push pin
-    //pinMode(BUTTON_PIN, INPUT);
-
     // draw the loading image
     display.clearDisplay();
     display.setTextColor(WHITE);
     display.drawBitmap(30, 0, datadog, 64, 64, 1);
     display.display();
-    sleep(2);
+    sleep(1);
 
     // if there's wifi creds, use them
     wifiStartInStationMode();
@@ -230,13 +225,14 @@ extern "C" void app_main() {
         ESP_LOGI("app_main", "Starting NTP client");
         int timezone = get_timezone();
         configTime(3600 * timezone, 0, ntpServer);
-        NTP.setInterval (300);
+        NTP.setInterval(30);
         NTP.begin();
+        wifiEnabled = true;
     }
 
     attachInterrupt(BUTTON_PIN, button_interrupt, CHANGE);
 
-    xTaskCreate(&main_render_loop, "main_render", 10000, NULL, 0, NULL);
+    xTaskCreate(&main_render_loop, "main_render", 10000, NULL, 1, NULL);
 }
 
 
